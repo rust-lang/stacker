@@ -9,6 +9,7 @@ before_script:
 script:
   - cargo test
   - cargo test --release
+  - cargo doc
 after_success:
   - travis-cargo --only nightly doc-upload
 notifications:
