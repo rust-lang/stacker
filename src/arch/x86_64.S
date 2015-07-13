@@ -25,7 +25,6 @@ GLOBAL(__stacker_stack_limit):
 GLOBAL(__stacker_set_stack_limit):
     movq %rdi, %gs:0x330
     ret
-#elif defined(WINDOWS)
 #else
 #error "unsupported arch"
 #endif
@@ -33,12 +32,9 @@ GLOBAL(__stacker_set_stack_limit):
 GLOBAL(__stacker_switch_stacks):
     push %rbp
     mov %rsp, %rbp
-    mov %rsp, %rax      // temporary for the old stack pointer
     mov %rdi, %rsp      // switch to our new stack
-    push %rax           // save the old stack pointer
-    sub $8, %rsp        // align the stack
     mov %rdx, %rdi      // move the data pointer to the first argument
     call *%rsi          // call our function pointer
-    mov 8(%rsp), %rsp   // restore the old stack pointer
+    mov %rbp, %rsp      // restore the old stack pointer
     pop %rbp
     ret
