@@ -33,3 +33,7 @@ env:
   matrix:
     - TARGET=x86_64-unknown-linux-gnu
     - TARGET=i686-unknown-linux-gnu
+
+os:
+  - linux
+  - osx
