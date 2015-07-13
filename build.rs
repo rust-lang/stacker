@@ -12,7 +12,7 @@ fn main() {
     } else if target.contains("darwin") {
         cfg.define("APPLE", None);
     } else if target.contains("windows") {
-        cfg.define("WINDOWS", None)
+        cfg.define("WINDOWS", None);
     } else {
         panic!("\n\nusing currently unsupported target triple with \
                 stacker: {}\n\n", target);
