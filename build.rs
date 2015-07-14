@@ -4,6 +4,7 @@ use std::env;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
+    let msvc = target.contains("msvc");
 
     let mut cfg = gcc::Config::new();
 
@@ -19,9 +20,9 @@ fn main() {
     }
 
     if target.starts_with("x86_64") {
-        cfg.file("src/arch/x86_64.S");
+        cfg.file(if msvc {"src/arch/x86_64.asm"} else {"src/arch/x86_64.S"});
     } else if target.contains("i686") {
-        cfg.file("src/arch/i686.S");
+        cfg.file(if msvc {"src/arch/i686.asm"} else {"src/arch/i686.S"});
     } else {
         panic!("\n\nusing currently unsupported target triple with \
                 stacker: {}\n\n", target);
