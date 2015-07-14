@@ -25,6 +25,13 @@ GLOBAL(__stacker_morestack_stack_limit):
 GLOBAL(__stacker_set_morestack_stack_limit):
     movq %rdi, %gs:0x330
     ret
+#elif defined(WINDOWS)
+GLOBAL(__stacker_morestack_stack_limit):
+    movq $0, %rax
+    ret
+
+GLOBAL(__stacker_set_morestack_stack_limit):
+    ret
 #else
 #error "unsupported arch"
 #endif
