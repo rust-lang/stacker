@@ -10,20 +10,20 @@ GLOBAL(__stacker_stack_pointer):
     ret
 
 #if defined(LINUX)
-GLOBAL(__stacker_stack_limit):
+GLOBAL(__stacker_morestack_stack_limit):
     mov %gs:0x30, %eax
     ret
 
-GLOBAL(__stacker_set_stack_limit):
+GLOBAL(__stacker_set_morestack_stack_limit):
     mov 4(%esp), %eax
     mov %eax, %gs:0x30
     ret
 #elif defined(APPLE)
-GLOBAL(__stacker_stack_limit):
+GLOBAL(__stacker_morestack_stack_limit):
     mov %gs:0x1b0, %eax
     ret
 
-GLOBAL(__stacker_set_stack_limit):
+GLOBAL(__stacker_set_morestack_stack_limit):
     mov 4(%esp), %eax
     mov %eax, %gs:0x1b0
     ret
