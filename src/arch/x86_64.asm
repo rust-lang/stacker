@@ -5,7 +5,7 @@ __stacker_black_box PROC
 __stacker_black_box ENDP
 
 __stacker_stack_pointer PROC
-    MOV RSP, RAX
+    MOV RAX, RSP
     RET
 __stacker_stack_pointer ENDP
 
