@@ -34,6 +34,10 @@ GLOBAL(__stacker_morestack_stack_limit):
 
 GLOBAL(__stacker_set_morestack_stack_limit):
     ret
+
+GLOBAL(__stacker_get_tib_32):
+    mov %fs:0x18, %eax
+    ret
 #else
 #error "unsupported arch"
 #endif

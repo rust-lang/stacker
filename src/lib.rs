@@ -22,10 +22,11 @@
 //! });
 //! ```
 
+#![allow(improper_ctypes)]
+
 use std::cell::Cell;
 
-#[allow(improper_ctypes)]
-extern {
+extern "system" {
     fn __stacker_morestack_stack_limit() -> usize;
     fn __stacker_set_morestack_stack_limit(limit: usize);
     fn __stacker_stack_pointer() -> usize;
@@ -36,6 +37,14 @@ extern {
 
 thread_local! {
     static STACK_LIMIT: Cell<usize> = Cell::new(guess_os_morestack_stack_limit())
+}
+
+fn get_stack_limit() -> usize {
+    STACK_LIMIT.with(|s| s.get())
+}
+
+fn set_stack_limit(l: usize) {
+    STACK_LIMIT.with(|s| s.set(l))
 }
 
 /// Grows the call stack if necessary.
@@ -51,8 +60,7 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize,
                                        stack_size: usize,
                                        f: F) -> R {
     unsafe {
-        let limit = STACK_LIMIT.with(|s| s.get());
-        if __stacker_stack_pointer() - limit >= red_zone {
+        if __stacker_stack_pointer() - get_stack_limit() >= red_zone {
             f()
         } else {
             grow_the_stack(stack_size, f)
@@ -74,12 +82,12 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
 
     // Save off the old stack limits
     let old_morestack_limit = __stacker_morestack_stack_limit();
-    let old_limit = STACK_LIMIT.with(|s| s.get());
+    let old_limit = get_stack_limit();
 
     // Prepare stack limits for the stack switch, note that the morestack stack
     // limit will be set to a real value once we've switched threads.
     __stacker_set_morestack_stack_limit(0);
-    STACK_LIMIT.with(|s| s.set(new_limit));
+    set_stack_limit(new_limit);
 
     // Set up the arguments and do the actual stack switch.
     let mut cx: Context<F, R> = Context {
@@ -94,18 +102,40 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     // Once we've returned reset bothe stack limits and then return value same
     // value the closure returned.
     __stacker_set_morestack_stack_limit(old_morestack_limit);
-    STACK_LIMIT.with(|s| s.set(old_limit));
+    set_stack_limit(old_limit);
     return cx.ret.unwrap();
 
-    unsafe extern fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
+    unsafe extern "system" fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
         __stacker_set_morestack_stack_limit(cx.new_limit);
         cx.ret = Some(cx.thunk.take().unwrap()());
         __stacker_set_morestack_stack_limit(0);
     }
 }
 
+#[cfg(unix)]
 fn guess_os_morestack_stack_limit() -> usize {
     unsafe {
         __stacker_morestack_stack_limit()
+    }
+}
+
+// See this for where all this logic is coming from.
+//
+// https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf/StackBounds.cpp
+#[cfg(windows)]
+fn guess_os_morestack_stack_limit() -> usize {
+    extern "system" {
+        #[cfg_attr(target_pointer_width = "32",
+                   link_name = "__stacker_get_tib_32")]
+        #[cfg_attr(target_pointer_width = "64",
+                   link_name = "NtCurrentTeb")]
+        fn get_tib_address() -> *const usize;
+    }
+    unsafe {
+        // See https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
+        // the struct layout of the 32-bit TIB. It looks like the struct layout
+        // of the 64-bit TIB is also the same for getting the stack limit:
+        // http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
+        *get_tib_address().offset(2)
     }
 }
