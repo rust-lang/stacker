@@ -129,14 +129,13 @@ fn guess_os_morestack_stack_limit() -> usize {
                    link_name = "__stacker_get_tib_32")]
         #[cfg_attr(target_pointer_width = "64",
                    link_name = "NtCurrentTeb")]
-        fn get_tib_address() -> usize;
+        fn get_tib_address() -> *const usize;
     }
     unsafe {
         // See https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
         // the struct layout of the 32-bit TIB. It looks like the struct layout
         // of the 64-bit TIB is also the same for getting the stack limit:
         // http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
-        let base = get_tib_address() as *const usize;
-        *base.offset(2)
+        *get_tib_address().offset(2)
     }
 }
