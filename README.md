@@ -17,6 +17,15 @@ This library is intended on helping implement recursive algorithms.
 stacker = "0.1"
 ```
 
+## Platform Support
+
+This library currently is verified to work on the following platforms:
+
+* 32/64 bit Linux
+* 32/64 bit OSX
+* 32/64 bit MinGW Windows
+* 64 bit MSVC Windows
+
 # License
 
 `stacker` is primarily distributed under the terms of both the MIT license and
