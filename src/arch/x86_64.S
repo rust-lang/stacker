@@ -9,6 +9,16 @@ GLOBAL(__stacker_stack_pointer):
     movq %rsp, %rax
     ret
 
+#if defined(WINDOWS)
+#define ARG1 %rcx
+#define ARG2 %rdx
+#define ARG3 %r8
+#else
+#define ARG1 %rdi
+#define ARG2 %rsi
+#define ARG3 %rdx
+#endif
+
 #if defined(LINUX)
 GLOBAL(__stacker_morestack_stack_limit):
     movq %fs:0x70, %rax
@@ -39,9 +49,9 @@ GLOBAL(__stacker_set_morestack_stack_limit):
 GLOBAL(__stacker_switch_stacks):
     push %rbp
     mov %rsp, %rbp
-    mov %rdi, %rsp      // switch to our new stack
-    mov %rdx, %rdi      // move the data pointer to the first argument
-    call *%rsi          // call our function pointer
+    mov ARG1, %rsp      // switch to our new stack
+    mov ARG3, ARG1      // move the data pointer to the first argument
+    call *ARG2          // call our function pointer
     mov %rbp, %rsp      // restore the old stack pointer
     pop %rbp
     ret

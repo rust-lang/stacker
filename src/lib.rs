@@ -26,7 +26,7 @@
 
 use std::cell::Cell;
 
-extern "system" {
+extern {
     fn __stacker_morestack_stack_limit() -> usize;
     fn __stacker_set_morestack_stack_limit(limit: usize);
     fn __stacker_stack_pointer() -> usize;
@@ -105,7 +105,7 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     set_stack_limit(old_limit);
     return cx.ret.unwrap();
 
-    unsafe extern "system" fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
+    unsafe extern fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
         __stacker_set_morestack_stack_limit(cx.new_limit);
         cx.ret = Some(cx.thunk.take().unwrap()());
         __stacker_set_morestack_stack_limit(0);
