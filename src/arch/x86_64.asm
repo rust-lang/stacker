@@ -21,9 +21,9 @@ __stacker_set_morestack_stack_limit ENDP
 __stacker_switch_stacks PROC
     PUSH RBP
     MOV RBP, RSP
-    MOV RSP, RDI            ; switch to our new stack
-    MOV RDI, RDX            ; move the data pointer to the first argument
-    CALL RSI                ; call our function pointer
+    MOV RSP, RCX            ; switch to our new stack
+    MOV RCX, R8             ; move the data pointer to the first argument
+    CALL RDX                ; call our function pointer
     MOV RSP, RBP            ; restore the old stack pointer
     POP RBP
     RET
