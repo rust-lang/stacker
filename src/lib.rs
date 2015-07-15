@@ -104,8 +104,31 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     }
 }
 
+#[cfg(unix)]
 fn guess_os_morestack_stack_limit() -> usize {
     unsafe {
         __stacker_morestack_stack_limit()
+    }
+}
+
+// See this for where all this logic is coming from.
+//
+// https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf/StackBounds.cpp
+#[cfg(windows)]
+fn guess_os_morestack_stack_limit() -> usize {
+    extern "system" {
+        #[cfg_attr(target_pointer_width = "32",
+                   link_name = "__stacker_get_tib_32")]
+        #[cfg_attr(target_pointer_width = "64",
+                   link_name = "NtCurrentTeb")]
+        fn get_tib_address() -> usize;
+    }
+    unsafe {
+        // See https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
+        // the struct layout of the 32-bit TIB. It looks like the struct layout
+        // of the 64-bit TIB is also the same for getting the stack limit:
+        // http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
+        let base = get_tib_address() as *const usize;
+        *base.offset(2)
     }
 }
