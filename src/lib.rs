@@ -124,11 +124,14 @@ fn guess_os_morestack_stack_limit() -> usize {
 // https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf/StackBounds.cpp
 #[cfg(windows)]
 fn guess_os_morestack_stack_limit() -> usize {
+    #[cfg(target_pointer_width = "32")]
+    extern {
+        #[link_name = "__stacker_get_tib_32"]
+        fn get_tib_address() -> *const usize;
+    }
+    #[cfg(target_pointer_width = "64")]
     extern "system" {
-        #[cfg_attr(target_pointer_width = "32",
-                   link_name = "__stacker_get_tib_32")]
-        #[cfg_attr(target_pointer_width = "64",
-                   link_name = "NtCurrentTeb")]
+        #[link_name = "NtCurrentTeb"]
         fn get_tib_address() -> *const usize;
     }
     unsafe {

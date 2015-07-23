@@ -21,7 +21,9 @@ __stacker_set_morestack_stack_limit PROC
 __stacker_set_morestack_stack_limit ENDP
 
 __stacker_get_tib_32 PROC
-    MOV EAX, [FS + 24]
+    ASSUME FS:NOTHING
+    MOV EAX, FS:[24]
+    ASSUME FS:ERROR
     RET
 __stacker_get_tib_32 ENDP
 
