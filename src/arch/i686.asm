@@ -20,6 +20,11 @@ __stacker_set_morestack_stack_limit PROC
     RET
 __stacker_set_morestack_stack_limit ENDP
 
+__stacker_get_tib_32 PROC
+    MOV EAX, [FS + 24]
+    RET
+__stacker_get_tib_32 ENDP
+
 __stacker_switch_stacks PROC
     PUSH EBP
     MOV EBP, ESP
