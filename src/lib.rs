@@ -24,6 +24,10 @@
 
 #![allow(improper_ctypes)]
 
+#[macro_use]
+extern crate cfg_if;
+extern crate libc;
+
 use std::cell::Cell;
 
 extern {
@@ -36,7 +40,9 @@ extern {
 }
 
 thread_local! {
-    static STACK_LIMIT: Cell<usize> = Cell::new(guess_os_morestack_stack_limit())
+    static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
+        guess_os_morestack_stack_limit()
+    })
 }
 
 fn get_stack_limit() -> usize {
@@ -112,33 +118,69 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     }
 }
 
-#[cfg(unix)]
-fn guess_os_morestack_stack_limit() -> usize {
-    unsafe {
-        __stacker_morestack_stack_limit()
-    }
-}
+cfg_if! {
+    if #[cfg(windows)] {
+        // See this for where all this logic is coming from.
+        //
+        // https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf
+        //                   /StackBounds.cpp
+        unsafe fn guess_os_morestack_stack_limit() -> usize {
+            #[cfg(target_pointer_width = "32")]
+            extern {
+                #[link_name = "__stacker_get_tib_32"]
+                fn get_tib_address() -> *const usize;
+            }
+            #[cfg(target_pointer_width = "64")]
+            extern "system" {
+                #[link_name = "NtCurrentTeb"]
+                fn get_tib_address() -> *const usize;
+            }
+            // https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
+            // the struct layout of the 32-bit TIB. It looks like the struct
+            // layout of the 64-bit TIB is also the same for getting the stack
+            // limit: http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
+            *get_tib_address().offset(2)
+        }
+    } else if #[cfg(target_os = "linux")] {
+        use libc::{pthread_attr_t, c_int, size_t, c_void, pthread_t};
+        use std::mem;
 
-// See this for where all this logic is coming from.
-//
-// https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf/StackBounds.cpp
-#[cfg(windows)]
-fn guess_os_morestack_stack_limit() -> usize {
-    #[cfg(target_pointer_width = "32")]
-    extern {
-        #[link_name = "__stacker_get_tib_32"]
-        fn get_tib_address() -> *const usize;
-    }
-    #[cfg(target_pointer_width = "64")]
-    extern "system" {
-        #[link_name = "NtCurrentTeb"]
-        fn get_tib_address() -> *const usize;
-    }
-    unsafe {
-        // See https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
-        // the struct layout of the 32-bit TIB. It looks like the struct layout
-        // of the 64-bit TIB is also the same for getting the stack limit:
-        // http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
-        *get_tib_address().offset(2)
+        unsafe fn guess_os_morestack_stack_limit() -> usize {
+            let mut attr: libc::pthread_attr_t = mem::zeroed();
+            assert_eq!(pthread_attr_init(&mut attr), 0);
+            assert_eq!(pthread_getattr_np(pthread_self(), &mut attr), 0);
+            let mut stackaddr = 0 as *mut _;
+            let mut stacksize = 0;
+            assert_eq!(pthread_attr_getstack(&attr, &mut stackaddr,
+                                             &mut stacksize), 0);
+            assert_eq!(pthread_attr_destroy(&mut attr), 0);
+            stackaddr as usize
+        }
+
+        extern {
+            fn pthread_self() -> pthread_t;
+            fn pthread_attr_init(attr: *mut pthread_attr_t) -> c_int;
+            fn pthread_attr_destroy(attr: *mut pthread_attr_t) -> c_int;
+            fn pthread_attr_getstack(attr: *const pthread_attr_t,
+                                     stackaddr: *mut *mut c_void,
+                                     stacksize: *mut size_t) -> c_int;
+            fn pthread_getattr_np(native: pthread_t,
+                                  attr: *mut pthread_attr_t) -> c_int;
+        }
+    } else if #[cfg(target_os = "macos")] {
+        use libc::{c_void, pthread_t};
+
+        unsafe fn guess_os_morestack_stack_limit() -> usize {
+            pthread_get_stackaddr_np(pthread_self()) as usize
+        }
+
+        extern {
+            fn pthread_self() -> pthread_t;
+            fn pthread_get_stackaddr_np(thread: pthread_t) -> *mut c_void;
+        }
+    } else {
+        unsafe fn guess_os_morestack_stack_limit() -> usize {
+            panic!("cannot guess the stack limit on this platform");
+        }
     }
 }
