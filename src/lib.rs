@@ -168,15 +168,17 @@ cfg_if! {
                                   attr: *mut pthread_attr_t) -> c_int;
         }
     } else if #[cfg(target_os = "macos")] {
-        use libc::{c_void, pthread_t};
+        use libc::{c_void, pthread_t, size_t};
 
         unsafe fn guess_os_morestack_stack_limit() -> usize {
-            pthread_get_stackaddr_np(pthread_self()) as usize
+            pthread_get_stackaddr_np(pthread_self()) as usize -
+                pthread_get_stacksize_np(pthread_self()) as usize
         }
 
         extern {
             fn pthread_self() -> pthread_t;
             fn pthread_get_stackaddr_np(thread: pthread_t) -> *mut c_void;
+            fn pthread_get_stacksize_np(thread: pthread_t) -> size_t;
         }
     } else {
         unsafe fn guess_os_morestack_stack_limit() -> usize {
