@@ -14,7 +14,7 @@ before_script:
 script:
   - cargo test --target $TARGET
   - cargo test --release --target $TARGET
-  - cargo doc
+  - cargo doc --no-deps
 after_success:
   - travis-cargo --only nightly doc-upload
 notifications:
