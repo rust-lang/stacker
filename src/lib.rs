@@ -82,6 +82,9 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
         new_limit: usize,
     }
 
+    // Align to 16-bytes (see below for why)
+    let stack_size = (stack_size + 15) / 16 * 16;
+
     // Allocate some new stack for oureslves
     let mut stack = Vec::<u8>::with_capacity(stack_size);
     let new_limit = stack.as_ptr() as usize + 32 * 1024;
@@ -101,7 +104,18 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
         ret: None,
         new_limit: new_limit,
     };
-    __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
+
+    // Make sure the stack is 16-byte aligned which should be enough for all
+    // platforms right now. Allocations on 64-bit are already 16-byte aligned
+    // and our switching routine doesn't push any other data, but the routine on
+    // 32-bit pushes an argument so we need a bit of an offset to get it 16-byte
+    // aligned when the call is made.
+    let offset = if cfg!(target_pointer_width = "32") {
+        12
+    } else {
+        0
+    };
+    __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size - offset,
                             doit::<R, F> as usize as *const _,
                             &mut cx as *mut _ as *mut _);
 
