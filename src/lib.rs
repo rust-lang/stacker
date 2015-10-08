@@ -145,9 +145,9 @@ cfg_if! {
                 fn get_tib_address() -> *const usize;
             }
             #[cfg(target_pointer_width = "64")]
-            #[link(name = "ntdll")]
             extern "system" {
-                #[link_name = "NtCurrentTeb"]
+                #[cfg_attr(target_env = "msvc", link_name = "NtCurrentTeb")]
+                #[cfg_attr(target_env = "gnu", link_name = "__stacker_get_tib_64")]
                 fn get_tib_address() -> *const usize;
             }
             // https://en.wikipedia.org/wiki/Win32_Thread_Information_Block for
