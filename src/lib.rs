@@ -145,6 +145,7 @@ cfg_if! {
                 fn get_tib_address() -> *const usize;
             }
             #[cfg(target_pointer_width = "64")]
+            #[link(name = "ntdll")]
             extern "system" {
                 #[link_name = "NtCurrentTeb"]
                 fn get_tib_address() -> *const usize;
