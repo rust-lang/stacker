@@ -157,43 +157,26 @@ cfg_if! {
             *get_tib_address().offset(2)
         }
     } else if #[cfg(target_os = "linux")] {
-        use libc::{pthread_attr_t, c_int, size_t, c_void, pthread_t};
         use std::mem;
 
         unsafe fn guess_os_morestack_stack_limit() -> usize {
             let mut attr: libc::pthread_attr_t = mem::zeroed();
-            assert_eq!(pthread_attr_init(&mut attr), 0);
-            assert_eq!(pthread_getattr_np(pthread_self(), &mut attr), 0);
+            assert_eq!(libc::pthread_attr_init(&mut attr), 0);
+            assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
+                                                &mut attr), 0);
             let mut stackaddr = 0 as *mut _;
             let mut stacksize = 0;
-            assert_eq!(pthread_attr_getstack(&attr, &mut stackaddr,
-                                             &mut stacksize), 0);
-            assert_eq!(pthread_attr_destroy(&mut attr), 0);
+            assert_eq!(libc::pthread_attr_getstack(&attr, &mut stackaddr,
+                                                   &mut stacksize), 0);
+            assert_eq!(libc::pthread_attr_destroy(&mut attr), 0);
             stackaddr as usize
-        }
-
-        extern {
-            fn pthread_self() -> pthread_t;
-            fn pthread_attr_init(attr: *mut pthread_attr_t) -> c_int;
-            fn pthread_attr_destroy(attr: *mut pthread_attr_t) -> c_int;
-            fn pthread_attr_getstack(attr: *const pthread_attr_t,
-                                     stackaddr: *mut *mut c_void,
-                                     stacksize: *mut size_t) -> c_int;
-            fn pthread_getattr_np(native: pthread_t,
-                                  attr: *mut pthread_attr_t) -> c_int;
         }
     } else if #[cfg(target_os = "macos")] {
         use libc::{c_void, pthread_t, size_t};
 
         unsafe fn guess_os_morestack_stack_limit() -> usize {
-            pthread_get_stackaddr_np(pthread_self()) as usize -
-                pthread_get_stacksize_np(pthread_self()) as usize
-        }
-
-        extern {
-            fn pthread_self() -> pthread_t;
-            fn pthread_get_stackaddr_np(thread: pthread_t) -> *mut c_void;
-            fn pthread_get_stacksize_np(thread: pthread_t) -> size_t;
+            libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
+                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize
         }
     } else {
         unsafe fn guess_os_morestack_stack_limit() -> usize {
