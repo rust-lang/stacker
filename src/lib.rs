@@ -63,12 +63,20 @@ fn set_stack_limit(l: usize) {
 pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize,
                                        stack_size: usize,
                                        f: F) -> R {
+    if remaining_stack() >= red_zone {
+        f()
+    } else {
+        grow_the_stack(stack_size, f)
+    }
+}
+
+/// Queries the amount of remaining stack as interpreted by this library.
+///
+/// This function will return the amount of stack space left which will be used
+/// to determine whether a stack switch should be made or not.
+pub fn remaining_stack() -> usize {
     unsafe {
-        if __stacker_stack_pointer() - get_stack_limit() >= red_zone {
-            f()
-        } else {
-            grow_the_stack(stack_size, f)
-        }
+        __stacker_stack_pointer() - get_stack_limit()
     }
 }
 
