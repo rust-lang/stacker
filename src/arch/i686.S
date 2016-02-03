@@ -9,6 +9,12 @@ GLOBAL(__stacker_stack_pointer):
     mov %esp, %eax
     ret
 
+#if defined(WINDOWS)
+GLOBAL(__stacker_get_tib_32):
+    mov %fs:0x18, %eax
+    ret
+#endif
+
 GLOBAL(__stacker_switch_stacks):
     push %ebp
     mov %esp, %ebp

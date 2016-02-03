@@ -19,6 +19,12 @@ GLOBAL(__stacker_stack_pointer):
 #define ARG3 %rdx
 #endif
 
+#if defined(WINDOWS)
+GLOBAL(__stacker_get_tib_64):
+    mov %gs:0x30, %rax
+    ret
+#endif
+
 GLOBAL(__stacker_switch_stacks):
     push %rbp
     mov %rsp, %rbp
