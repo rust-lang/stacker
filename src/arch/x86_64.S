@@ -19,37 +19,6 @@ GLOBAL(__stacker_stack_pointer):
 #define ARG3 %rdx
 #endif
 
-#if defined(LINUX)
-GLOBAL(__stacker_morestack_stack_limit):
-    movq %fs:0x70, %rax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    movq %rdi, %fs:0x70
-    ret
-#elif defined(APPLE)
-GLOBAL(__stacker_morestack_stack_limit):
-    movq %gs:0x330, %rax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    movq %rdi, %gs:0x330
-    ret
-#elif defined(WINDOWS)
-GLOBAL(__stacker_morestack_stack_limit):
-    movq $0, %rax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    ret
-
-GLOBAL(__stacker_get_tib_64):
-    mov %gs:0x30, %rax
-    ret
-#else
-#error "unsupported arch"
-#endif
-
 GLOBAL(__stacker_switch_stacks):
     push %rbp
     mov %rsp, %rbp

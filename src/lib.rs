@@ -31,8 +31,6 @@ extern crate libc;
 use std::cell::Cell;
 
 extern {
-    fn __stacker_morestack_stack_limit() -> usize;
-    fn __stacker_set_morestack_stack_limit(limit: usize);
     fn __stacker_stack_pointer() -> usize;
     fn __stacker_switch_stacks(new_stack: usize,
                                fnptr: *const u8,
@@ -41,7 +39,7 @@ extern {
 
 thread_local! {
     static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
-        guess_os_morestack_stack_limit()
+        guess_os_stack_limit()
     })
 }
 
@@ -79,7 +77,6 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     struct Context<F: FnOnce() -> R, R> {
         thunk: Option<F>,
         ret: Option<R>,
-        new_limit: usize,
     }
 
     // Align to 16-bytes (see below for why)
@@ -90,19 +87,15 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     let new_limit = stack.as_ptr() as usize + 32 * 1024;
 
     // Save off the old stack limits
-    let old_morestack_limit = __stacker_morestack_stack_limit();
     let old_limit = get_stack_limit();
 
-    // Prepare stack limits for the stack switch, note that the morestack stack
-    // limit will be set to a real value once we've switched threads.
-    __stacker_set_morestack_stack_limit(0);
+    // Prepare stack limits for the stack switch
     set_stack_limit(new_limit);
 
     // Set up the arguments and do the actual stack switch.
     let mut cx: Context<F, R> = Context {
         thunk: Some(f),
         ret: None,
-        new_limit: new_limit,
     };
 
     // Make sure the stack is 16-byte aligned which should be enough for all
@@ -121,14 +114,11 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
 
     // Once we've returned reset bothe stack limits and then return value same
     // value the closure returned.
-    __stacker_set_morestack_stack_limit(old_morestack_limit);
     set_stack_limit(old_limit);
     return cx.ret.unwrap();
 
     unsafe extern fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
-        __stacker_set_morestack_stack_limit(cx.new_limit);
         cx.ret = Some(cx.thunk.take().unwrap()());
-        __stacker_set_morestack_stack_limit(0);
     }
 }
 
@@ -138,7 +128,7 @@ cfg_if! {
         //
         // https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf
         //                   /StackBounds.cpp
-        unsafe fn guess_os_morestack_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> usize {
             #[cfg(target_pointer_width = "32")]
             extern {
                 #[link_name = "__stacker_get_tib_32"]
@@ -159,7 +149,7 @@ cfg_if! {
     } else if #[cfg(target_os = "linux")] {
         use std::mem;
 
-        unsafe fn guess_os_morestack_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> usize {
             let mut attr: libc::pthread_attr_t = mem::zeroed();
             assert_eq!(libc::pthread_attr_init(&mut attr), 0);
             assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
@@ -174,12 +164,12 @@ cfg_if! {
     } else if #[cfg(target_os = "macos")] {
         use libc::{c_void, pthread_t, size_t};
 
-        unsafe fn guess_os_morestack_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> usize {
             libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
                 libc::pthread_get_stacksize_np(libc::pthread_self()) as usize
         }
     } else {
-        unsafe fn guess_os_morestack_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> usize {
             panic!("cannot guess the stack limit on this platform");
         }
     }

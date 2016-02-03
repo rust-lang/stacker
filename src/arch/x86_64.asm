@@ -9,15 +9,6 @@ __stacker_stack_pointer PROC
     RET
 __stacker_stack_pointer ENDP
 
-__stacker_morestack_stack_limit PROC
-    MOV RAX, 0
-    RET
-__stacker_morestack_stack_limit ENDP
-
-__stacker_set_morestack_stack_limit PROC
-    RET
-__stacker_set_morestack_stack_limit ENDP
-
 __stacker_switch_stacks PROC
     PUSH RBP
     MOV RBP, RSP

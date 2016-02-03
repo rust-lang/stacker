@@ -11,15 +11,6 @@ __stacker_stack_pointer PROC
     RET
 __stacker_stack_pointer ENDP
 
-__stacker_morestack_stack_limit PROC
-    MOV EAX, 0
-    RET
-__stacker_morestack_stack_limit ENDP
-
-__stacker_set_morestack_stack_limit PROC
-    RET
-__stacker_set_morestack_stack_limit ENDP
-
 __stacker_get_tib_32 PROC
     ASSUME FS:NOTHING
     MOV EAX, FS:[24]

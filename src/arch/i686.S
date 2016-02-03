@@ -9,39 +9,6 @@ GLOBAL(__stacker_stack_pointer):
     mov %esp, %eax
     ret
 
-#if defined(LINUX)
-GLOBAL(__stacker_morestack_stack_limit):
-    mov %gs:0x30, %eax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    mov 4(%esp), %eax
-    mov %eax, %gs:0x30
-    ret
-#elif defined(APPLE)
-GLOBAL(__stacker_morestack_stack_limit):
-    mov %gs:0x1b0, %eax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    mov 4(%esp), %eax
-    mov %eax, %gs:0x1b0
-    ret
-#elif defined(WINDOWS)
-GLOBAL(__stacker_morestack_stack_limit):
-    mov $0, %eax
-    ret
-
-GLOBAL(__stacker_set_morestack_stack_limit):
-    ret
-
-GLOBAL(__stacker_get_tib_32):
-    mov %fs:0x18, %eax
-    ret
-#else
-#error "unsupported arch"
-#endif
-
 GLOBAL(__stacker_switch_stacks):
     push %ebp
     mov %esp, %ebp
