@@ -73,12 +73,18 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize,
 }
 
 #[inline(never)]
-unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
-    struct Context<F: FnOnce() -> R, R> {
-        thunk: Option<F>,
-        ret: Option<R>,
+fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
+    let mut f = Some(f);
+    let mut ret = None;
+    unsafe {
+        _grow_the_stack(stack_size, &mut || {
+            ret = Some(f.take().unwrap()());
+        });
     }
+    ret.unwrap()
+}
 
+unsafe fn _grow_the_stack(stack_size: usize, mut f: &mut FnMut()) {
     // Align to 16-bytes (see below for why)
     let stack_size = (stack_size + 15) / 16 * 16;
 
@@ -92,12 +98,6 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     // Prepare stack limits for the stack switch
     set_stack_limit(new_limit);
 
-    // Set up the arguments and do the actual stack switch.
-    let mut cx: Context<F, R> = Context {
-        thunk: Some(f),
-        ret: None,
-    };
-
     // Make sure the stack is 16-byte aligned which should be enough for all
     // platforms right now. Allocations on 64-bit are already 16-byte aligned
     // and our switching routine doesn't push any other data, but the routine on
@@ -109,16 +109,15 @@ unsafe fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
         0
     };
     __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size - offset,
-                            doit::<R, F> as usize as *const _,
-                            &mut cx as *mut _ as *mut _);
+                            doit as usize as *const _,
+                            &mut f as *mut &mut FnMut() as *mut u8);
 
     // Once we've returned reset bothe stack limits and then return value same
     // value the closure returned.
     set_stack_limit(old_limit);
-    return cx.ret.unwrap();
 
-    unsafe extern fn doit<R, F: FnOnce() -> R>(cx: &mut Context<F, R>) {
-        cx.ret = Some(cx.thunk.take().unwrap()());
+    unsafe extern fn doit(f: &mut &mut FnMut()) {
+        f();
     }
 }
 
