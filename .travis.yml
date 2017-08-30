@@ -1,37 +1,38 @@
 language: rust
-rust:
-  - stable
-  - beta
-  - nightly
 sudo: false
-install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then OS=unknown-linux-gnu; else OS=apple-darwin; fi
-  - export TARGET=$ARCH-$OS
-  - curl https://static.rust-lang.org/rustup.sh |
-    sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
-before_script:
-  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+
+matrix:
+  include:
+    - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=i686-unknown-linux-gnu
+      install: rustup target add $TARGET
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
+    - env: TARGET=i686-apple-darwin
+      os: osx
+      install: rustup target add $TARGET
+    - rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+    - rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
+      before_script:
+        - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+      after_success:
+        - travis-cargo doc-upload
+
 script:
   - cargo test --target $TARGET
   - cargo test --release --target $TARGET
   - cargo doc --no-deps
-after_success:
-  - travis-cargo --only nightly doc-upload
+
 notifications:
   email:
     on_success: never
-addons:
-  apt:
-    packages:
-      - gcc-multilib
+
 env:
   global:
     secure: "svERMPbvMr1ctEAwHqSinbPASsM2+K4gqrNRhDksgzHByk5ROe8xhZwgWDrzVdOjQpBE7tqhgj8y88w/nI/WYG6T5xnE5AvSJVXmwU47IzzYPqT44BE9RZJlndW0YKqATdb2kVj3NT2pPd8PgQRiExzucga2KolpVvQylyfabX6mbuFWfG7RfO7Wln7t1aXMDeSn0A70Y9rN8g7rctOnpavonXK0LzbuGcGmOmJjTWt3euF7DW2Rci0CxpFPFHLnlXbHL+t9WYNvKWHjxkvWWkVxTa+e29wrDLCoNK8rQICDYM5oiklI/ticOgWrB/rEBxaJSYwia4PtGjdXRjCwxB/Ut8L4B0jePgU2ggg6RmMEW5de+aURueIrftOo6iKfgB4w5FtARjNzW/tBk0AckoykbiTd0fpEDZgq0wz4kUNbK9gzKamSpLbWNn+Kg/Mwb2IANc7iwUBZ+L1fgbZ7GqocDaACn1Urlfz6JDkfwLKr9QShXUfux0M6T8NWSgt0a7HbfijpZEYLxPMC5n7ggDs8NN+UfwnJw4Rl6FksJKur30HOkv4iiPvj7X+j7rRaoP7rLtkkYVjBtzYAgsEq7JBE6fzWklgNc5v6FcfdFybYnAF3IZFMF+s48v2PSABOSCiUS1KXZaHuS+oHiT32DmBE4ylOEFo4Y+/vYdEiVnQ="
-
-  matrix:
-    - ARCH=x86_64
-    - ARCH=i686
-
-os:
-  - linux
-  - osx
