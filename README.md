@@ -7,7 +7,7 @@
 
 A stack-growth library for Rust. Enables annotating fixed points in programs
 where the stack may want to grow larger. Spills over to the heap if the stack
-has it its limit.
+has hit its limit.
 
 This library is intended on helping implement recursive algorithms.
 

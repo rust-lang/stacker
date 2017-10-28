@@ -26,7 +26,6 @@ fn deep() {
 }
 
 #[test]
-#[ignore]
 fn panic() {
     fn foo(n: usize, s: &mut [u8]) {
         unsafe { __stacker_black_box(s.as_ptr()); }
@@ -48,4 +47,41 @@ fn panic() {
     }).join().unwrap_err();
 
     assert!(rx.recv().is_err());
+}
+
+fn recursive<F: FnOnce()>(n: usize, f: F) -> usize {
+    if n > 0 {
+        stacker::grow(64 * 1024, || {
+            recursive(n - 1, f) + 1
+        })
+    } else {
+        f();
+        0
+    }
+}
+
+#[test]
+fn catch_panic() {
+    let panic_result = std::panic::catch_unwind(|| {
+        recursive(100, || panic!());
+    });
+    assert!(panic_result.is_err());
+}
+
+#[test]
+fn catch_panic_inside() {
+    stacker::grow(64 * 1024, || {
+        let panic_result = std::panic::catch_unwind(|| {
+            recursive(100, || panic!());
+        });
+        assert!(panic_result.is_err());
+    });
+}
+
+#[test]
+fn catch_panic_leaf() {
+    stacker::grow(64 * 1024, || {
+        let panic_result = std::panic::catch_unwind(|| panic!());
+        assert!(panic_result.is_err());
+    });
 }
