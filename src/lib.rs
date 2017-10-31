@@ -82,6 +82,7 @@ cfg_if! {
             fn __stacker_switch_stacks(dataptr: *mut u8,
                                        fnptr: *const u8,
                                        new_stack: usize);
+            fn getpagesize() -> libc::c_int;
         }
 
         thread_local! {
@@ -99,19 +100,70 @@ cfg_if! {
             STACK_LIMIT.with(|s| s.set(l))
         }
 
+        struct StackSwitch {
+            map: *mut libc::c_void,
+            stack_size: usize,
+            old_stack_limit: usize,
+        }
+
+        impl Drop for StackSwitch {
+            fn drop(&mut self) {
+                unsafe {
+                    libc::munmap(self.map, self.stack_size);
+                }
+                set_stack_limit(self.old_stack_limit);
+            }
+        }
+
         fn _grow(stack_size: usize, mut f: &mut FnMut()) {
-            // Align to 16-bytes (see below for why)
-            let stack_size = (stack_size + 15) / 16 * 16;
+            let page_size = unsafe { getpagesize() } as usize;
 
-            // Allocate some new stack for oureslves
-            let mut stack = Vec::<u8>::with_capacity(stack_size);
-            let new_limit = stack.as_ptr() as usize + 32 * 1024;
+            // Round the stack size up to a multiple of page_size
+            let rem = stack_size % page_size;
+            let stack_size = if rem == 0 {
+                stack_size
+            } else {
+                stack_size.checked_add((page_size - rem))
+                          .expect("stack size calculation overflowed")
+            };
 
-            // Save off the old stack limits
-            let old_limit = get_stack_limit();
+            // We need at least 2 page
+            let stack_size = std::cmp::max(stack_size, page_size);
+
+            // Add a guard page
+            let stack_size = stack_size.checked_add(page_size)
+                                       .expect("stack size calculation overflowed");
+
+            // Allocate some new stack for ourselves
+            let map = unsafe {
+                libc::mmap(std::ptr::null_mut(),
+                           stack_size,
+                           libc::PROT_NONE,
+                           libc::MAP_PRIVATE |
+                           libc::MAP_ANON,
+                           0,
+                           0)
+            };
+            if map == -1isize as _ {
+                panic!("unable to allocate stack")
+            }    
+            let _switch = StackSwitch {
+                map,
+                stack_size,
+                old_stack_limit: get_stack_limit(),
+            };
+            let result = unsafe {
+                libc::mprotect((map as usize + page_size) as *mut libc::c_void,
+                               stack_size - page_size,
+                               libc::PROT_READ | libc::PROT_WRITE)
+            };
+            if result == -1 {
+                panic!("unable to set stack permissions")
+            }
+            let stack_low = map as usize;
 
             // Prepare stack limits for the stack switch
-            set_stack_limit(new_limit);
+            set_stack_limit(stack_low);
 
             // Make sure the stack is 16-byte aligned which should be enough for all
             // platforms right now. Allocations on 64-bit are already 16-byte aligned
@@ -127,12 +179,10 @@ cfg_if! {
             unsafe {
                 __stacker_switch_stacks(&mut f as *mut &mut FnMut() as *mut u8,
                                         doit as usize as *const _,
-                                        stack.as_mut_ptr() as usize + stack_size - offset);
+                                        stack_low + stack_size - offset);
             }
 
-            // Once we've returned reset bothe stack limits and then return value same
-            // value the closure returned.
-            set_stack_limit(old_limit);
+            // Dropping `switch` frees the memory mapping and restores the old stack limit
         }
     }
 }
@@ -181,11 +231,11 @@ cfg_if! {
                     },
                 };
                 if info.parent_fiber == 0i32 as _ {
-                    panic!("Unable to convert thread to fiber");
+                    panic!("unable to convert thread to fiber");
                 }
                 let fiber = kernel32::CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
                 if fiber == 0i32 as _ {
-                    panic!("Unable to allocate fiber");
+                    panic!("unable to allocate fiber");
                 }
                 kernel32::SwitchToFiber(fiber);
                 kernel32::DeleteFiber(fiber);
@@ -253,8 +303,6 @@ cfg_if! {
             stackaddr as usize
         }
     } else if #[cfg(target_os = "macos")] {
-        use libc::{c_void, pthread_t, size_t};
-
         unsafe fn guess_os_stack_limit() -> usize {
             libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
                 libc::pthread_get_stacksize_np(libc::pthread_self()) as usize
