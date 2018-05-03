@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 
 use std::env;
 
@@ -6,7 +6,7 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     let msvc = target.contains("msvc");
 
-    let mut cfg = gcc::Config::new();
+    let mut cfg = cc::Build::new();
 
     if target.contains("linux") {
         cfg.define("LINUX", None);
