@@ -65,14 +65,7 @@ fn set_stack_limit(l: usize) {
 ///
 /// The closure `f` is guaranteed to run on a stack with at least `red_zone`
 /// bytes, and it will be run on the current stack if there's space available.
-pub fn maybe_grow<
-    R,
-    F: FnOnce() -> R + std::panic::UnwindSafe,
->(
-    red_zone: usize,
-    stack_size: usize,
-    f: F,
-) -> R {
+pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, f: F) -> R {
     if remaining_stack() >= red_zone {
         f()
     } else {
@@ -91,19 +84,13 @@ pub fn remaining_stack() -> usize {
 }
 
 #[inline(never)]
-fn grow_the_stack<
-    R,
-    F: FnOnce() -> R + std::panic::UnwindSafe,
->(
-    stack_size: usize,
-    f: F,
-) -> R {
+fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     let mut f = Some(f);
     let mut ret = None;
     unsafe {
         _grow_the_stack(stack_size, &mut || {
             let f: F = f.take().unwrap();
-            ret = Some(std::panic::catch_unwind(f));
+            ret = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)));
         });
     }
     match ret.unwrap() {
