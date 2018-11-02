@@ -192,7 +192,21 @@ cfg_if! {
         }
     } else {
         unsafe fn guess_os_stack_limit() -> usize {
-            panic!("cannot guess the stack limit on this platform");
+            0
+        }
+        mod exports {
+            #[no_mangle]
+            extern fn __stacker_stack_pointer() -> usize {
+                0
+            }
+            #[no_mangle]
+            unsafe extern fn __stacker_switch_stacks(
+                _new_stack: usize,
+                fnptr: unsafe fn(&mut &mut FnMut()),
+                dataptr: &mut &mut FnMut(),
+            ) {
+                fnptr(dataptr)
+            }
         }
     }
 }
