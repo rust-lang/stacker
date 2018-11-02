@@ -21,6 +21,11 @@
 //!     // guaranteed to have at least 32K of stack
 //! });
 //! ```
+//!
+//! # Platform support
+//!
+//! Only Windows, MacOS and Linux are supported. Other platforms don't do anything
+//! and will overflow your stack.
 
 #![allow(improper_ctypes)]
 
