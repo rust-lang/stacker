@@ -14,9 +14,6 @@ fn main() {
         cfg.define("APPLE", None);
     } else if target.contains("windows") {
         cfg.define("WINDOWS", None);
-    } else {
-        panic!("\n\nusing currently unsupported target triple with \
-                stacker: {}\n\n", target);
     }
 
     if target.starts_with("x86_64") {
@@ -26,8 +23,7 @@ fn main() {
         cfg.file(if msvc {"src/arch/i686.asm"} else {"src/arch/i686.S"});
         cfg.define("X86", None);
     } else {
-        panic!("\n\nusing currently unsupported target triple with \
-                stacker: {}\n\n", target);
+        cfg.file("fallback.rs");
     }
 
     cfg.include("src/arch").compile("libstacker.a");
