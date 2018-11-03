@@ -43,17 +43,17 @@ extern {
 }
 
 thread_local! {
-    static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
+    static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
         guess_os_stack_limit()
     })
 }
 
-fn get_stack_limit() -> usize {
+fn get_stack_limit() -> Option<usize> {
     STACK_LIMIT.with(|s| s.get())
 }
 
 fn set_stack_limit(l: usize) {
-    STACK_LIMIT.with(|s| s.set(l))
+    STACK_LIMIT.with(|s| s.set(Some(l)))
 }
 
 /// Grows the call stack if necessary.
@@ -66,10 +66,14 @@ fn set_stack_limit(l: usize) {
 /// The closure `f` is guaranteed to run on a stack with at least `red_zone`
 /// bytes, and it will be run on the current stack if there's space available.
 pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, f: F) -> R {
-    if remaining_stack() >= red_zone {
-        f()
+    if let Some(remaining_stack_bytes) = remaining_stack() {
+        if remaining_stack_bytes >= red_zone {
+            f()
+        } else {
+            grow_the_stack(stack_size, f, remaining_stack_bytes)
+        }
     } else {
-        grow_the_stack(stack_size, f)
+        f()
     }
 }
 
@@ -77,18 +81,18 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, f: F)
 ///
 /// This function will return the amount of stack space left which will be used
 /// to determine whether a stack switch should be made or not.
-pub fn remaining_stack() -> usize {
-    unsafe {
-        __stacker_stack_pointer() - get_stack_limit()
-    }
+pub fn remaining_stack() -> Option<usize> {
+    get_stack_limit().map(|limit| unsafe {
+        __stacker_stack_pointer() - limit
+    })
 }
 
 #[inline(never)]
-fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
+fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F, remaining_stack_bytes: usize) -> R {
     let mut f = Some(f);
     let mut ret = None;
     unsafe {
-        _grow_the_stack(stack_size, &mut || {
+        _grow_the_stack(stack_size, remaining_stack_bytes, &mut || {
             let f: F = f.take().unwrap();
             ret = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)));
         });
@@ -99,16 +103,13 @@ fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     }
 }
 
-unsafe fn _grow_the_stack(stack_size: usize, mut f: &mut FnMut()) {
+unsafe fn _grow_the_stack(stack_size: usize, old_limit: usize, mut f: &mut FnMut()) {
     // Align to 16-bytes (see below for why)
     let stack_size = (stack_size + 15) / 16 * 16;
 
     // Allocate some new stack for oureslves
     let mut stack = Vec::<u8>::with_capacity(stack_size);
     let new_limit = stack.as_ptr() as usize + 32 * 1024;
-
-    // Save off the old stack limits
-    let old_limit = get_stack_limit();
 
     // Prepare stack limits for the stack switch
     set_stack_limit(new_limit);
@@ -142,7 +143,7 @@ cfg_if! {
         //
         // https://github.com/adobe/webkit/blob/0441266/Source/WTF/wtf
         //                   /StackBounds.cpp
-        unsafe fn guess_os_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
             #[cfg(target_pointer_width = "32")]
             extern {
                 #[link_name = "__stacker_get_tib_32"]
@@ -158,12 +159,12 @@ cfg_if! {
             // the struct layout of the 32-bit TIB. It looks like the struct
             // layout of the 64-bit TIB is also the same for getting the stack
             // limit: http://doxygen.reactos.org/d3/db0/structNT__TIB64.html
-            *get_tib_address().offset(2)
+            Some(*get_tib_address().offset(2))
         }
     } else if #[cfg(target_os = "linux")] {
         use std::mem;
 
-        unsafe fn guess_os_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr: libc::pthread_attr_t = mem::zeroed();
             assert_eq!(libc::pthread_attr_init(&mut attr), 0);
             assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
@@ -173,18 +174,18 @@ cfg_if! {
             assert_eq!(libc::pthread_attr_getstack(&attr, &mut stackaddr,
                                                    &mut stacksize), 0);
             assert_eq!(libc::pthread_attr_destroy(&mut attr), 0);
-            stackaddr as usize
+            Some(stackaddr as usize)
         }
     } else if #[cfg(target_os = "macos")] {
         use libc::{c_void, pthread_t, size_t};
 
-        unsafe fn guess_os_stack_limit() -> usize {
-            libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
-                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            Some(libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
+                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize)
         }
     } else {
-        unsafe fn guess_os_stack_limit() -> usize {
-            0
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            None
         }
     }
 }
