@@ -35,6 +35,10 @@ extern crate libc;
 
 use std::cell::Cell;
 
+#[cfg(fallback)]
+#[path="arch/fallback.rs"]
+mod fallback;
+
 extern {
     fn __stacker_stack_pointer() -> usize;
     fn __stacker_switch_stacks(new_stack: usize,

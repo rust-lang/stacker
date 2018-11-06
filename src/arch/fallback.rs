@@ -11,3 +11,6 @@ unsafe extern fn __stacker_switch_stacks(
 ) {
     panic!("not supported")
 }
+
+#[no_mangle]
+extern fn __stacker_black_box(_: *const u8) {}

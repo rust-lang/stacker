@@ -23,7 +23,8 @@ fn main() {
         cfg.file(if msvc {"src/arch/i686.asm"} else {"src/arch/i686.S"});
         cfg.define("X86", None);
     } else {
-        cfg.file("fallback.rs");
+        println!("cargo:rustc-cfg=fallback");
+        return;
     }
 
     cfg.include("src/arch").compile("libstacker.a");
