@@ -36,15 +36,36 @@ extern crate libc;
 use std::cell::Cell;
 
 #[cfg(fallback)]
-#[path="arch/fallback.rs"]
-mod fallback;
+mod intern {
+    pub fn __stacker_stack_pointer() -> usize {
+        panic!("not supported")
+    }
 
-extern {
-    fn __stacker_stack_pointer() -> usize;
-    fn __stacker_switch_stacks(new_stack: usize,
-                               fnptr: *const u8,
-                               dataptr: *mut u8);
+    pub unsafe fn __stacker_switch_stacks(
+        _new_stack: usize,
+        _fnptr: unsafe extern fn(&mut &mut FnMut()),
+        _dataptr: &mut &mut FnMut(),
+    ) {
+        panic!("not supported")
+    }
+
+    #[no_mangle]
+    extern fn __stacker_black_box(_: *const u8) {}
 }
+
+#[cfg(not(fallback))]
+mod intern {
+    extern {
+        pub fn __stacker_stack_pointer() -> usize;
+        pub fn __stacker_switch_stacks(
+            new_stack: usize,
+            fnptr: unsafe extern fn(&mut &mut FnMut()),
+            dataptr: &mut &mut FnMut(),
+        );
+    }
+}
+
+use intern::*;
 
 thread_local! {
     static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
@@ -129,8 +150,8 @@ unsafe fn _grow_the_stack(stack_size: usize, old_limit: usize, mut f: &mut FnMut
         0
     };
     __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size - offset,
-                            doit as usize as *const _,
-                            &mut f as *mut &mut FnMut() as *mut u8);
+                            doit,
+                            &mut f);
 
     // Once we've returned reset bothe stack limits and then return value same
     // value the closure returned.
