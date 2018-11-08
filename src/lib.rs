@@ -33,7 +33,7 @@
 extern crate cfg_if;
 extern crate libc;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 #[cfg(fallback)]
 mod intern {
@@ -128,13 +128,44 @@ fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F, remaining_stack_
     }
 }
 
+#[derive(Default)]
+struct StackCache {
+    /// used to grow the stack exponentially
+    counter: usize,
+    /// memorize the largest ever allocated stack frame after popping it
+    largest: Option<Vec<u8>>,
+}
+
+impl StackCache {
+    fn allocate(&mut self, stack_size: usize) -> Vec<u8> {
+        if let Some(largest) = self.largest.take() {
+            return largest;
+        }
+        let pow = 1 << self.counter;
+        self.counter += 1;
+        // Align to 16-bytes (see below for why)
+        let stack_size = (stack_size * pow + 15) / 16 * 16;
+        Vec::with_capacity(stack_size)
+    }
+
+    fn cache(&mut self, v: Vec<u8>) {
+        if let Some(ref largest) = self.largest {
+            debug_assert!(largest.capacity() > v.capacity());
+        } else {
+            self.largest = Some(v);
+        }
+    }
+}
+
+thread_local! {
+    static STACK_CACHE: RefCell<StackCache> = RefCell::default();
+}
+
 unsafe fn _grow_the_stack(stack_size: usize, old_limit: usize, mut f: &mut FnMut()) {
-    // Align to 16-bytes (see below for why)
-    let stack_size = (stack_size + 15) / 16 * 16;
 
     // Allocate some new stack for oureslves
-    let mut stack = Vec::<u8>::with_capacity(stack_size);
-    let new_limit = stack.as_ptr() as usize + 32 * 1024;
+    let mut stack = STACK_CACHE.with(|sc| sc.borrow_mut().allocate(stack_size));
+    let new_limit = stack.as_ptr() as usize;
 
     // Prepare stack limits for the stack switch
     set_stack_limit(new_limit);
@@ -149,13 +180,17 @@ unsafe fn _grow_the_stack(stack_size: usize, old_limit: usize, mut f: &mut FnMut
     } else {
         0
     };
-    __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size - offset,
+    __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack.capacity() - offset,
                             doit,
                             &mut f);
 
     // Once we've returned reset bothe stack limits and then return value same
     // value the closure returned.
     set_stack_limit(old_limit);
+
+    // Do not throw away this allocation. We might be on a stack boundary and end up
+    // pushing and popping stacks repeatedly
+    STACK_CACHE.with(|v| v.borrow_mut().cache(stack));
 
     unsafe extern fn doit(f: &mut &mut FnMut()) {
         f();
