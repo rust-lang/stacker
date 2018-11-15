@@ -14,6 +14,9 @@ fn main() {
         cfg.define("APPLE", None);
     } else if target.contains("windows") {
         cfg.define("WINDOWS", None);
+    } else {
+        println!("cargo:rustc-cfg=fallback");
+        return;
     }
 
     if target.starts_with("x86_64") {

@@ -37,7 +37,10 @@ use std::cell::{Cell, RefCell};
 
 #[cfg(fallback)]
 mod intern {
-    pub fn __stacker_stack_pointer() -> usize {
+    // needs to be unsafe to mirror the `extern` fn
+    // otherwise the callees either get `missing unsafe` errors
+    // or `unnecessary unsafe` warnings
+    pub unsafe fn __stacker_stack_pointer() -> usize {
         panic!("not supported")
     }
 
