@@ -86,10 +86,13 @@ fn grow_the_stack<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     let mut ret = None;
     unsafe {
         _grow_the_stack(stack_size, &mut || {
-            ret = Some(f.take().unwrap()());
+            ret = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(f.take().unwrap())));
         });
     }
-    ret.unwrap()
+    match ret.unwrap() {
+        Ok(ret) => ret,
+        Err(payload) => std::panic::resume_unwind(payload),
+    }
 }
 
 unsafe fn _grow_the_stack(stack_size: usize, mut f: &mut FnMut()) {
