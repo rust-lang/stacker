@@ -32,6 +32,8 @@ extern crate kernel32;
 #[cfg(windows)]
 extern crate winapi;
 
+use std::cell::Cell;
+
 /// Grows the call stack if necessary.
 ///
 /// This function is intended to be called at manually instrumented points in a
@@ -78,30 +80,28 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
     ret.unwrap()
 }
 
+thread_local! {
+    static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
+        guess_os_stack_limit()
+    })
+}
+
+#[inline(always)]
+fn get_stack_limit() -> usize {
+    STACK_LIMIT.with(|s| s.get())
+}
+
+fn set_stack_limit(l: usize) {
+    STACK_LIMIT.with(|s| s.set(l))
+}
+
 cfg_if! {
     if #[cfg(not(windows))] {
-        use std::cell::Cell;
-
         extern {
             fn __stacker_switch_stacks(dataptr: *mut u8,
                                        fnptr: *const u8,
                                        new_stack: usize);
             fn getpagesize() -> libc::c_int;
-        }
-
-        thread_local! {
-            static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
-                guess_os_stack_limit()
-            })
-        }
-
-        #[inline(always)]
-        fn get_stack_limit() -> usize {
-            STACK_LIMIT.with(|s| s.get())
-        }
-
-        fn set_stack_limit(l: usize) {
-            STACK_LIMIT.with(|s| s.set(l))
         }
 
         struct StackSwitch {
@@ -180,6 +180,10 @@ cfg_if! {
                 0
             };
 
+            extern fn doit(f: &mut &mut FnMut()) {
+                f();
+            }
+
             unsafe {
                 __stacker_switch_stacks(&mut f as *mut &mut FnMut() as *mut u8,
                                         doit as usize as *const _,
@@ -191,21 +195,8 @@ cfg_if! {
     }
 }
 
-extern fn doit(f: &mut &mut FnMut()) {
-    f();
-}
-
 cfg_if! {
     if #[cfg(windows)] {
-        extern {
-            fn __stacker_get_current_fiber() -> winapi::PVOID;
-        }
-
-        #[no_mangle]
-        pub unsafe extern fn __stacker_switch_stacks_callback(f: &mut &mut FnMut()) {
-            f();
-        }
-
         struct FiberInfo<'a> {
             callback: &'a mut FnMut(),
             result: Option<std::thread::Result<()>>,
@@ -229,7 +220,10 @@ cfg_if! {
                     callback,
                     result: None,
                     parent_fiber: if was_fiber {
-                        __stacker_get_current_fiber()
+                        extern {
+                            fn GetCurrentFiber() -> *mut winapi::c_void;
+                        }
+                        GetCurrentFiber()
                     } else {
                         kernel32::ConvertThreadToFiber(0i32 as _)
                     },
@@ -237,6 +231,7 @@ cfg_if! {
                 if info.parent_fiber == 0i32 as _ {
                     panic!("unable to convert thread to fiber");
                 }
+                set_stack_limit(stack_size);
                 let fiber = kernel32::CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
                 if fiber == 0i32 as _ {
                     panic!("unable to allocate fiber");
@@ -256,15 +251,9 @@ cfg_if! {
 
         cfg_if! {
             if #[cfg(any(target_arch = "x86_64", target_arch = "x86"))] {
-                extern {
-                    fn __stacker_get_stack_limit() -> usize;
-                }
-
                 #[inline(always)]
-                fn get_stack_limit() -> usize {
-                    unsafe {
-                        __stacker_get_stack_limit()
-                    }
+                unsafe fn guess_os_stack_limit() -> usize {
+                    unimplemented!()
                 }
             } else {
                 #[inline(always)]
@@ -282,11 +271,9 @@ cfg_if! {
                 }
 
                 #[inline(always)]
-                fn get_stack_limit() -> usize {
+                unsafe fn guess_os_stack_limit() -> usize {
                     let mut mi;
-                    unsafe {
-                        kernel32::VirtualQuery(__stacker_stack_pointer(), &mut mi, std::mem::size_of_val(&mi));
-                    }
+                    kernel32::VirtualQuery(__stacker_stack_pointer(), &mut mi, std::mem::size_of_val(&mi));
                     mi.AllocationBase + get_thread_stack_guarantee() + 0x1000
                 }
             }
