@@ -2,6 +2,10 @@
 
 .text
 
+GLOBAL(__stacker_stack_pointer):
+    mov %esp, %eax
+    ret
+
 GLOBAL(__stacker_black_box):
     ret
 

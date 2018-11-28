@@ -4,6 +4,9 @@
 
 GLOBAL(__stacker_black_box):
     ret
+GLOBAL(__stacker_stack_pointer):
+    movq %rsp, %rax
+    ret
 
 GLOBAL(__stacker_switch_stacks):
     .cfi_startproc

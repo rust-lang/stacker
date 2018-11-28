@@ -52,13 +52,17 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize,
     }
 }
 
+extern {
+    fn __stacker_stack_pointer() -> usize;
+}
+
 /// Queries the amount of remaining stack as interpreted by this library.
 ///
 /// This function will return the amount of stack space left which will be used
 /// to determine whether a stack switch should be made or not.
 #[inline(always)]
 pub fn remaining_stack() -> usize {
-    &mut () as *mut _ as usize - get_stack_limit()
+    unsafe { __stacker_stack_pointer() - get_stack_limit() }
 }
 
 /// Always creates a new stack for the passed closure to run on.
@@ -146,7 +150,7 @@ cfg_if! {
             };
             if map == -1isize as _ {
                 panic!("unable to allocate stack")
-            }    
+            }
             let _switch = StackSwitch {
                 map,
                 stack_size,
@@ -220,7 +224,7 @@ cfg_if! {
         fn _grow(stack_size: usize, callback: &mut FnMut()) {
             unsafe {
                 let was_fiber = kernel32::IsThreadAFiber() == winapi::TRUE;
-                
+
                 let mut info = FiberInfo {
                     callback,
                     result: None,
@@ -281,7 +285,7 @@ cfg_if! {
                 fn get_stack_limit() -> usize {
                     let mut mi;
                     unsafe {
-                        kernel32::VirtualQuery(&mut () as *mut (), &mut mi, std::mem::size_of_val(&mi));
+                        kernel32::VirtualQuery(__stacker_stack_pointer(), &mut mi, std::mem::size_of_val(&mi));
                     }
                     mi.AllocationBase + get_thread_stack_guarantee() + 0x1000
                 }
