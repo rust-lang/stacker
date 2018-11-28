@@ -223,6 +223,7 @@ cfg_if! {
             unsafe {
                 let was_fiber = kernel32::IsThreadAFiber() == winapi::TRUE;
 
+                // Fibers are essentially stackfull coroutines
                 let mut info = FiberInfo {
                     callback,
                     result: None,
@@ -243,7 +244,9 @@ cfg_if! {
                 if fiber == 0i32 as _ {
                     panic!("unable to allocate fiber");
                 }
+                // switch to fiber and immediately execute
                 kernel32::SwitchToFiber(fiber);
+                // fiber execution finished, we can safely delete it now
                 kernel32::DeleteFiber(fiber);
 
                 if !was_fiber {
