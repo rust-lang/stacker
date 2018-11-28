@@ -8,9 +8,12 @@ PVOID __stacker_get_current_fiber() {
 
 static size_t calc_stack_limit(size_t stack_low, size_t stack_guarantee) {
     return stack_low +
-           max(stack_guarantee, sizeof(void *) == 4 ? 0x1000 : 0x2000) + // The guaranteed pages on a stack overflow 
+           max(stack_guarantee, sizeof(void *) == 4 ? 0x1000 : 0x2000) + // The guaranteed pages on a stack overflow
            0x1000; // The guard page
 }
+
+// Fast paths for x86
+// magic numbers are from https://en.wikipedia.org/wiki/Win32_Thread_Information_Block
 
 #if defined(_M_X64)
 size_t __stacker_get_stack_limit() {
