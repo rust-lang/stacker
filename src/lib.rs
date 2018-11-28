@@ -127,7 +127,7 @@ cfg_if! {
             let stack_size = if rem == 0 {
                 stack_size
             } else {
-                stack_size.checked_add((page_size - rem))
+                stack_size.checked_add(page_size - rem)
                           .expect("stack size calculation overflowed")
             };
 
