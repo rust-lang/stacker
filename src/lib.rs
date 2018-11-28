@@ -44,10 +44,15 @@ use std::cell::Cell;
 /// The closure `f` is guaranteed to run on a stack with at least `red_zone`
 /// bytes, and it will be run on the current stack if there's space available.
 #[inline(always)]
-pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize,
-                                       stack_size: usize,
-                                       f: F) -> R {
-    if remaining_stack() >= red_zone {
+pub fn maybe_grow<R, F: FnOnce() -> R>(
+    red_zone: usize,
+    stack_size: usize,
+    f: F,
+) -> R {
+    // if we can't guess the remaining stack (unsupported on some platforms)
+    // we immediately grow the stack and then cache the new stack size (which
+    // we do know now because we know by how much we grew the stack)
+    if remaining_stack().map_or(false, |remaining| remaining >= red_zone) {
         f()
     } else {
         grow(stack_size, f)
@@ -63,8 +68,8 @@ extern {
 /// This function will return the amount of stack space left which will be used
 /// to determine whether a stack switch should be made or not.
 #[inline(always)]
-pub fn remaining_stack() -> usize {
-    unsafe { __stacker_stack_pointer() - get_stack_limit() }
+pub fn remaining_stack() -> Option<usize> {
+    get_stack_limit().map(|limit| unsafe { __stacker_stack_pointer() - limit })
 }
 
 /// Always creates a new stack for the passed closure to run on.
@@ -81,18 +86,18 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
 }
 
 thread_local! {
-    static STACK_LIMIT: Cell<usize> = Cell::new(unsafe {
+    static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
         guess_os_stack_limit()
     })
 }
 
 #[inline(always)]
-fn get_stack_limit() -> usize {
+fn get_stack_limit() -> Option<usize> {
     STACK_LIMIT.with(|s| s.get())
 }
 
 fn set_stack_limit(l: usize) {
-    STACK_LIMIT.with(|s| s.set(l))
+    STACK_LIMIT.with(|s| s.set(Some(l)))
 }
 
 cfg_if! {
@@ -107,7 +112,7 @@ cfg_if! {
         struct StackSwitch {
             map: *mut libc::c_void,
             stack_size: usize,
-            old_stack_limit: usize,
+            old_stack_limit: Option<usize>,
         }
 
         impl Drop for StackSwitch {
@@ -115,7 +120,9 @@ cfg_if! {
                 unsafe {
                     libc::munmap(self.map, self.stack_size);
                 }
-                set_stack_limit(self.old_stack_limit);
+                if let Some(limit) = self.old_stack_limit {
+                    set_stack_limit(limit);
+                }
             }
         }
 
@@ -252,8 +259,8 @@ cfg_if! {
         cfg_if! {
             if #[cfg(any(target_arch = "x86_64", target_arch = "x86"))] {
                 #[inline(always)]
-                unsafe fn guess_os_stack_limit() -> usize {
-                    unimplemented!()
+                unsafe fn guess_os_stack_limit() -> Option<usize> {
+                    None
                 }
             } else {
                 #[inline(always)]
@@ -271,17 +278,17 @@ cfg_if! {
                 }
 
                 #[inline(always)]
-                unsafe fn guess_os_stack_limit() -> usize {
+                unsafe fn guess_os_stack_limit() -> Option<usize> {
                     let mut mi;
                     kernel32::VirtualQuery(__stacker_stack_pointer(), &mut mi, std::mem::size_of_val(&mi));
-                    mi.AllocationBase + get_thread_stack_guarantee() + 0x1000
+                    Some(mi.AllocationBase + get_thread_stack_guarantee() + 0x1000)
                 }
             }
         }
     } else if #[cfg(target_os = "linux")] {
         use std::mem;
 
-        unsafe fn guess_os_stack_limit() -> usize {
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr: libc::pthread_attr_t = mem::zeroed();
             assert_eq!(libc::pthread_attr_init(&mut attr), 0);
             assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
@@ -291,16 +298,16 @@ cfg_if! {
             assert_eq!(libc::pthread_attr_getstack(&attr, &mut stackaddr,
                                                    &mut stacksize), 0);
             assert_eq!(libc::pthread_attr_destroy(&mut attr), 0);
-            stackaddr as usize
+            Some(stackaddr as usize)
         }
     } else if #[cfg(target_os = "macos")] {
-        unsafe fn guess_os_stack_limit() -> usize {
-            libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
-                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            Some(libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
+                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize)
         }
     } else {
-        unsafe fn guess_os_stack_limit() -> usize {
-            panic!("cannot guess the stack limit on this platform");
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            None
         }
     }
 }
