@@ -239,6 +239,9 @@ cfg_if! {
                 if info.parent_fiber == 0i32 as _ {
                     panic!("unable to convert thread to fiber");
                 }
+                // remember the old stack limit
+                let old_stack_limit = get_stack_limit();
+                // bump the know stack size in the thread local
                 set_stack_limit(stack_size);
                 let fiber = kernel32::CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
                 if fiber == 0i32 as _ {
@@ -248,6 +251,11 @@ cfg_if! {
                 kernel32::SwitchToFiber(fiber);
                 // fiber execution finished, we can safely delete it now
                 kernel32::DeleteFiber(fiber);
+
+                // restore the old stack limit
+                if let Some(old) = old_stack_limit {
+                    set_stack_limit(old);
+                }
 
                 if !was_fiber {
                     kernel32::ConvertFiberToThread();
@@ -262,6 +270,7 @@ cfg_if! {
         cfg_if! {
             if #[cfg(any(target_arch = "x86_64", target_arch = "x86"))] {
                 #[inline(always)]
+                // We cannot know the initial stack size on x86
                 unsafe fn guess_os_stack_limit() -> Option<usize> {
                     None
                 }
@@ -309,6 +318,9 @@ cfg_if! {
                 libc::pthread_get_stacksize_np(libc::pthread_self()) as usize)
         }
     } else {
+        // fallback for other platforms is to always increase the stack if we're on
+        // the root stack. After we increased the stack once, we know the new stack
+        // size and don't need this pessimization anymore
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             None
         }
