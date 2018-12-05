@@ -4,8 +4,16 @@ use std::env;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
-    let msvc = target.contains("msvc");
 
+    if target.starts_with("wasm32") {
+        // wasm32 auxilary functions are provided as a precompiled object file.
+        // this is because LLVM with wasm32 support isn't widespread.
+        println!("cargo:rustc-link-search={}", "src/arch/wasm32");
+        println!("cargo:rustc-link-lib=stacker");
+        return;
+    }
+
+    let msvc = target.contains("msvc");
     let mut cfg = cc::Build::new();
 
     if target.contains("linux") {

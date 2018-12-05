@@ -4,6 +4,14 @@ sudo: false
 matrix:
   include:
     - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=wasm32-unknown-unknown
+      install: 
+        - rustup target add $TARGET
+        - cargo install wasm-pack
+      script:
+        - wasm-pack test --chrome --headless --release
+      addons:
+        chrome: stable
     - env: TARGET=i686-unknown-linux-gnu
       install: rustup target add $TARGET
       addons:

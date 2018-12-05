@@ -1,2 +1,5 @@
 target
 Cargo.lock
+*.o
+/bin
+/wasm-pack.log

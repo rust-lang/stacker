@@ -108,6 +108,43 @@ cfg_if! {
             drop(stack_size);
             f();
         }
+    } else if #[cfg(all(target_arch = "wasm32", target_os = "unknown"))] {
+        extern "C" {
+            fn __stacker_switch_stacks(
+                new_stack: usize,
+                fnptr: *const u8,
+                dataptr: *mut u8
+            );
+        }
+
+        fn _grow(stack_size: usize, mut f: &mut FnMut()) {        
+            // Keep stack 4 bytes aligned.
+            let stack_size = (stack_size + 3) / 4 * 4;
+
+            // Allocate some new stack for oureslves
+            let mut stack = Vec::<u8>::with_capacity(stack_size);
+            let new_limit = stack.as_ptr() as usize + 32 * 1024;
+
+            // Save off the old stack limits
+            let old_limit = get_stack_limit();
+
+            // Prepare stack limits for the stack switch
+            set_stack_limit(Some(new_limit));
+
+            unsafe {
+                __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
+                                        doit as usize as *const _,
+                                        &mut f as *mut &mut FnMut() as *mut u8);
+            }
+
+            // Once we've returned reset bothe stack limits and then return value same
+            // value the closure returned.
+            set_stack_limit(old_limit);
+
+            unsafe extern fn doit(f: &mut &mut FnMut()) {
+                f();
+            }
+        }
     } else if #[cfg(not(windows))] {
         use std::any::Any;
         use std::panic::{self, AssertUnwindSafe};
@@ -388,6 +425,7 @@ cfg_if! {
         // fallback for other platforms is to always increase the stack if we're on
         // the root stack. After we increased the stack once, we know the new stack
         // size and don't need this pessimization anymore
+        #[inline(always)]
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             None
         }
