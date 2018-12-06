@@ -279,7 +279,8 @@ cfg_if! {
                 // We are back on the old stack and now we have destroy the fiber and its stack
                 kernel32::DeleteFiber(fiber);
 
-                // If the 
+                // If we started out on a non-fiber thread, we converted that thread to a fiber.
+                // Here we convert back.
                 if !was_fiber {
                     kernel32::ConvertFiberToThread();
                 }
