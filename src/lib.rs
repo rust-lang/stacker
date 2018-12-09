@@ -179,44 +179,9 @@ impl StackDirection {
     }
 }
 
-// /// The required alignment for the stack.
-// ///
-// /// Note that alignment = page-size is maximally portable.
-// pub fn required_stack_alignment() -> usize {
-//     unimplemented!()
-// }
-//
-// #[test]
-// fn stack_direction_is_right() {
-//     // FIXME:
-//     StackDirection::new();
-// }
-
-// #[test]
-// fn basic_on_stack_works() {
-//     let mut x = vec![0; 1024];
-//     unsafe {
-//         assert_eq!(on_stack(x.as_mut_ptr(), 1024, move || {
-//             42
-//         }), 42);
-//     }
-// }
-//
-// #[test]
-// fn on_stack_recursion() {
-//     #[inline(never)]
-//     fn fib(n: usize) -> u64 {
-//         match n {
-//             0 => 0,
-//             1 => 1,
-//             _ => fib(n - 1) + fib(n - 2),
-//         }
-//     }
-//
-//     let mut x = vec![0; 1024];
-//     unsafe {
-//         assert_eq!(on_stack(x.as_mut_ptr(), 1024, move || {
-//             fib(8)
-//         }), 21);
-//     }
-// }
+#[inline(always)]
+pub fn stack_pointer() -> *mut u8 {
+    unsafe {
+        rust_psm_stack_pointer()
+    }
+}
