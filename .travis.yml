@@ -96,5 +96,4 @@ before_cache:
   - chmod -R a+r $HOME/.cargo
 
 notifications:
-  email:
-    on_success: never
+  email: false
