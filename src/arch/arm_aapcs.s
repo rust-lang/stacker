@@ -36,7 +36,8 @@ FUNCTION(rust_psm_stack_direction):
 /* extern "C" fn() -> u8 */
 FNSTART
 .cfi_startproc
-    mov r0, #STACK_DIRECTION_DESCENDING
+    /* movs to support Thumb-1 */
+    movs r0, #STACK_DIRECTION_DESCENDING
     bx lr
 .rust_psm_stack_direction_end:
 SIZE(rust_psm_stack_direction,.rust_psm_stack_direction_end)
