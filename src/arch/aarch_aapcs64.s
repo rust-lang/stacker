@@ -1,65 +1,59 @@
 #include "psm.h"
-/* NOTE: sysv64 calling convention is used on all x86_64 targets, including Windows! */
 
 .text
 .globl rust_psm_stack_direction
-.p2align 4
+.p2align 2
 .type rust_psm_stack_direction,@function
 rust_psm_stack_direction:
-/* extern "sysv64" fn() -> u8 (%al) */
+/* extern "C" fn() -> u8 */
 .cfi_startproc
-    movb $STACK_DIRECTION_DESCENDING, %al # always descending on x86_64
-    retq
+    orr w0, wzr, #STACK_DIRECTION_DESCENDING
+    ret
 .rust_psm_stack_direction_end:
 .size       rust_psm_stack_direction,.rust_psm_stack_direction_end-rust_psm_stack_direction
 .cfi_endproc
 
 
 .globl rust_psm_stack_pointer
-.p2align 4
+.p2align 2
 .type rust_psm_stack_pointer,@function
 rust_psm_stack_pointer:
-/* extern "sysv64" fn() -> *mut u8 (%rax) */
+/* extern "C" fn() -> *mut u8 */
 .cfi_startproc
-    leaq 8(%rsp), %rax
-    retq
+    mov x0, sp
+    ret
 .rust_psm_stack_pointer_end:
 .size       rust_psm_stack_pointer,.rust_psm_stack_pointer_end-rust_psm_stack_pointer
 .cfi_endproc
 
 
 .globl rust_psm_replace_stack
-.p2align 4
+.p2align 2
 .type rust_psm_replace_stack,@function
 rust_psm_replace_stack:
-/* extern "sysv64" fn(%rdi: usize, %rsi: extern "sysv64" fn(usize), %rdx: *mut u8) */
+/* extern "C" fn(r0: usize, r1: extern "C" fn(usize), r2: *mut u8) */
 .cfi_startproc
-/*
-    All we gotta do is set the stack pointer to %rdx & tail-call the callback in %rsi.
-
-    8-byte offset necessary to account for the "return" pointer that would otherwise be placed onto
-    stack with a regular call
-*/
-    leaq -8(%rdx), %rsp
-    jmpq *%rsi
+/* All we gotta do is set the stack pointer to %rdx & tail-call the callback in %rsi */
+    mov sp, x2
+    br x1
 .rust_psm_replace_stack_end:
 .size       rust_psm_replace_stack,.rust_psm_replace_stack_end-rust_psm_replace_stack
 .cfi_endproc
 
 
 .globl rust_psm_on_stack
-.p2align 4
+.p2align 2
 .type rust_psm_on_stack,@function
 rust_psm_on_stack:
-/* extern "sysv64" fn(%rdi: usize, %rsi: usize, %rdx: extern "sysv64" fn(usize, usize), %rcx: *mut u8) */
+/* extern "C" fn(r0: usize, r1: usize, r2: extern "C" fn(usize, usize), r3: *mut u8) */
 .cfi_startproc
-    pushq %rbp
-    movq  %rsp, %rbp
-    movq  %rcx, %rsp
-    callq *%rdx
-    movq  %rbp, %rsp
-    popq  %rbp
-    retq
+    stp fp, lr, [sp, #-16]!
+    mov fp, sp
+    mov sp, x3
+    blr x2
+    mov sp, fp
+    ldp fp, lr, [sp], #16
+    ret
 .rust_psm_on_stack_end:
 .size       rust_psm_on_stack,.rust_psm_on_stack_end-rust_psm_on_stack
 .cfi_endproc
