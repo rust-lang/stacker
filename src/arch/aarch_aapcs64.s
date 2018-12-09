@@ -47,12 +47,12 @@ rust_psm_replace_stack:
 rust_psm_on_stack:
 /* extern "C" fn(r0: usize, r1: usize, r2: extern "C" fn(usize, usize), r3: *mut u8) */
 .cfi_startproc
-    stp x29, lr, [sp, #-16]!
+    stp x29, x30, [sp, #-16]!
     mov x29, sp
     mov sp, x3
     blr x2
     mov sp, x29
-    ldp x29, lr, [sp], #16
+    ldp x29, x30, [sp], #16
     ret
 .rust_psm_on_stack_end:
 .size       rust_psm_on_stack,.rust_psm_on_stack_end-rust_psm_on_stack
