@@ -1,38 +1,56 @@
 #include "psm.h"
-
 /* NOTE: fastcall calling convention used on all x86 targets */
 
 .text
-.globl rust_psm_stack_direction
+
+#if CFG_TARGET_OS_darwin || CFG_TARGET_OS_macos || CFG_TARGET_OS_ios
+
+#define GLOBL(fnname) .globl _##fnname
+#define TYPE(fnname)
+#define FUNCTION(fnname) _##fnname
+#define SIZE(fnname,endlabel)
+
+#else
+
+#define GLOBL(fnname) .globl fnname
+#define TYPE(fnname) .type fnname,@function
+#define FUNCTION(fnname) fnname
+#define SIZE(fnname,endlabel) .size fnname,endlabel-fnname
+
+#endif
+
+
+
+GLOBL(rust_psm_stack_direction)
 .p2align 4
-.type rust_psm_stack_direction,@function
-rust_psm_stack_direction:
+TYPE(rust_psm_stack_direction)
+FUNCTION(rust_psm_stack_direction):
 /* extern "fastcall" fn() -> u8 (%al) */
 .cfi_startproc
     movb $STACK_DIRECTION_DESCENDING, %al # always descending on x86_64
     retl
 .rust_psm_stack_direction_end:
-.size       rust_psm_stack_direction,.rust_psm_stack_direction_end-rust_psm_stack_direction
+SIZE(rust_psm_stack_direction,.rust_psm_stack_direction_end)
 .cfi_endproc
 
 
-.globl rust_psm_stack_pointer
+GLOBL(rust_psm_stack_pointer)
 .p2align 4
-.type rust_psm_stack_pointer,@function
-rust_psm_stack_pointer:
+TYPE(rust_psm_stack_pointer)
+FUNCTION(rust_psm_stack_pointer):
 /* extern "fastcall" fn() -> *mut u8 (%rax) */
 .cfi_startproc
     leal 4(%esp), %eax
     retl
 .rust_psm_stack_pointer_end:
-.size       rust_psm_stack_pointer,.rust_psm_stack_pointer_end-rust_psm_stack_pointer
+SIZE(rust_psm_stack_pointer,.rust_psm_stack_pointer_end)
 .cfi_endproc
 
 
-.globl rust_psm_replace_stack
+GLOBL(rust_psm_replace_stack)
 .p2align 4
-.type rust_psm_replace_stack,@function
-rust_psm_replace_stack:
+TYPE(rust_psm_replace_stack)
+FUNCTION(rust_psm_replace_stack):
 /* extern "fastcall" fn(%ecx: usize, %edx: extern "fastcall" fn(usize), 4(%esp): *mut u8) */
 .cfi_startproc
 /*
@@ -48,14 +66,14 @@ rust_psm_replace_stack:
     calll *%edx
     ud2
 .rust_psm_replace_stack_end:
-.size       rust_psm_replace_stack,.rust_psm_replace_stack_end-rust_psm_replace_stack
+SIZE(rust_psm_replace_stack,.rust_psm_replace_stack_end)
 .cfi_endproc
 
 
-.globl rust_psm_on_stack
+GLOBL(rust_psm_on_stack)
 .p2align 4
-.type rust_psm_on_stack,@function
-rust_psm_on_stack:
+TYPE(rust_psm_on_stack)
+FUNCTION(rust_psm_on_stack):
 /* extern "fastcall" fn(%ecx: usize, %edx: usize, 4(%esp): extern "fastcall" fn(usize, usize), 8(%esp): *mut u8) */
 .cfi_startproc
     pushl %ebp
@@ -66,5 +84,5 @@ rust_psm_on_stack:
     popl  %ebp
     retl  $8
 .rust_psm_on_stack_end:
-.size       rust_psm_on_stack,.rust_psm_on_stack_end-rust_psm_on_stack
+SIZE(rust_psm_on_stack,.rust_psm_on_stack_end)
 .cfi_endproc

@@ -33,36 +33,10 @@ fn main() {
 
     let mut cfg = cc::Build::new();
     cfg.flag("-xassembler-with-cpp");
-    cfg.define("CFG_TARGET_ARCH", Some(&*arch));
-    cfg.define("CFG_TARGET_ENV", Some(&*env));
-    cfg.define("CFG_TARGET_OS", Some(&*os));
     cfg.file(asm);
+    cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
+    cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
+    cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
+
     cfg.compile("libpsm_s.a");
-
-    // let msvc = target.contains("msvc");
-
-
-    // if target.contains("linux") {
-    //     cfg.define("LINUX", None);
-    // } else if target.contains("darwin") {
-    //     cfg.define("APPLE", None);
-    // } else if target.contains("windows") {
-    //     cfg.define("WINDOWS", None);
-    // } else {
-    //     panic!("\n\nusing currently unsupported target triple with \
-    //             stacker: {}\n\n", target);
-    // }
-
-    // if target.starts_with("x86_64") {
-    //     cfg.file(if msvc {"src/arch/x86_64.asm"} else {"src/arch/x86_64.S"});
-    //     cfg.define("X86_64", None);
-    // } else if target.contains("i686") {
-    //     cfg.file(if msvc {"src/arch/i686.asm"} else {"src/arch/i686.S"});
-    //     cfg.define("X86", None);
-    // } else {
-    //     panic!("\n\nusing currently unsupported target triple with \
-    //             stacker: {}\n\n", target);
-    // }
-
-    // cfg.include("src/arch").compile("libstacker.a");
 }
