@@ -5,10 +5,10 @@ fn find_assembly(arch: &str, env: &str) -> Option<&'static str> {
         (("*", "msvc"), None),
         (("x86", "*"), Some("src/arch/x86.s")),
         (("x86_64", "*"), Some("src/arch/x86_64.s")),
-        (("arm", "*"), Some("arc/arch/arm_aapcs.s")),
-        (("armv7", "*"), Some("arc/arch/arm_aapcs.s")),
-        (("thumbv6", "*"), Some("arc/arch/arm_aapcs.s")),
-        (("thumbv7", "*"), Some("arc/arch/arm_aapcs.s")),
+        (("arm", "*"), Some("src/arch/arm_aapcs.s")),
+        (("armv7", "*"), Some("src/arch/arm_aapcs.s")),
+        (("thumbv6", "*"), Some("src/arch/arm_aapcs.s")),
+        (("thumbv7", "*"), Some("src/arch/arm_aapcs.s")),
         (("aarch64", "*"), Some("src/arch/aarch_aapcs64.s")),
     ];
 
