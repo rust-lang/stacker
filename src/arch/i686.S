@@ -6,9 +6,6 @@ GLOBAL(__stacker_stack_pointer):
     mov %esp, %eax
     ret
 
-GLOBAL(__stacker_black_box):
-    ret
-
 GLOBAL(__stacker_switch_stacks):
     // CFI instructions tells the unwinder how to unwind this function
     // This enables unwinding through our extended stacks and also
