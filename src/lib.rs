@@ -200,6 +200,9 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(windows)] {
+        use std::ptr;
+        use std::io;
+
         use winapi::shared::basetsd::*;
         use winapi::shared::minwindef::{LPVOID, BOOL};
         use winapi::shared::ntdef::*;
@@ -264,18 +267,22 @@ cfg_if! {
                             // to the current stack. Threads coverted to fibers still act like
                             // regular threads, but they have associated fiber data. We later
                             // convert it back to a regular thread and free the fiber data.
-                            ConvertThreadToFiber(0i32 as _)
+                            ConvertThreadToFiber(ptr::null_mut())
                         }
                     },
                 };
-                if info.parent_fiber == 0i32 as _ {
+                if info.parent_fiber.is_null() {
                     // We don't have a handle to the fiber, so we can't switch back
-                    panic!("unable to convert thread to fiber");
+                    panic!("unable to convert thread to fiber: {}", io::Error::last_os_error());
                 }
 
-                let fiber = CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
-                if fiber == 0i32 as _ {
-                    panic!("unable to allocate fiber");
+                let fiber = CreateFiber(
+                    stack_size as SIZE_T,
+                    Some(fiber_proc),
+                    &mut info as *mut FiberInfo as *mut _,
+                );
+                if fiber.is_null() {
+                    panic!("unable to allocate fiber: {}", io::Error::last_os_error());
                 }
 
                 // Switch to the fiber we created. This changes stacks and starts executing
@@ -288,7 +295,9 @@ cfg_if! {
                 // If we started out on a non-fiber thread, we converted that thread to a fiber.
                 // Here we convert back.
                 if !was_fiber {
-                    ConvertFiberToThread();
+                    if ConvertFiberToThread() == 0 {
+                        panic!("unable to convert back to thread: {}", io::Error::last_os_error());
+                    }
                 }
 
                 if let Err(payload) = info.result.unwrap() {
