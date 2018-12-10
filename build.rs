@@ -14,6 +14,7 @@ fn main() {
         cfg.define("APPLE", None);
     } else if target.contains("windows") {
         cfg.define("WINDOWS", None);
+        cfg.file("src/arch/windows.c");
     } else {
         panic!("\n\nusing currently unsupported target triple with \
                 stacker: {}\n\n", target);
