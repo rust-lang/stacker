@@ -28,8 +28,6 @@
 extern crate cfg_if;
 extern crate libc;
 #[cfg(windows)]
-extern crate kernel32;
-#[cfg(windows)]
 extern crate winapi;
 
 use std::cell::Cell;
@@ -202,17 +200,25 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(windows)] {
+        use winapi::shared::basetsd::*;
+        use winapi::shared::minwindef::{LPVOID, BOOL};
+        use winapi::shared::ntdef::*;
+        use winapi::um::fibersapi::*;
+        use winapi::um::memoryapi::*;
+        use winapi::um::processthreadsapi::*;
+        use winapi::um::winbase::*;
+
         extern {
-            fn __stacker_get_current_fiber() -> winapi::PVOID;
+            fn __stacker_get_current_fiber() -> PVOID;
         }
 
         struct FiberInfo<'a> {
             callback: &'a mut FnMut(),
             result: Option<std::thread::Result<()>>,
-            parent_fiber: winapi::LPVOID,
+            parent_fiber: LPVOID,
         }
 
-        unsafe extern "system" fn fiber_proc(info: winapi::LPVOID) {
+        unsafe extern "system" fn fiber_proc(info: LPVOID) {
             let info = &mut *(info as *mut FiberInfo);
 
             // Remember the old stack limit
@@ -227,7 +233,7 @@ cfg_if! {
             // Restore the stack limit of the previous fiber
             set_stack_limit(old_stack_limit);
 
-            kernel32::SwitchToFiber(info.parent_fiber);
+            SwitchToFiber(info.parent_fiber);
             return;
         }
 
@@ -239,7 +245,7 @@ cfg_if! {
                 // `callback` we switch back to the current stack and destroy
                 // the fiber and its associated stack.
 
-                let was_fiber = kernel32::IsThreadAFiber() == winapi::TRUE;
+                let was_fiber = IsThreadAFiber() == TRUE as BOOL;
 
                 let mut info = FiberInfo {
                     callback,
@@ -258,7 +264,7 @@ cfg_if! {
                             // to the current stack. Threads coverted to fibers still act like
                             // regular threads, but they have associated fiber data. We later
                             // convert it back to a regular thread and free the fiber data.
-                            kernel32::ConvertThreadToFiber(0i32 as _)
+                            ConvertThreadToFiber(0i32 as _)
                         }
                     },
                 };
@@ -267,22 +273,22 @@ cfg_if! {
                     panic!("unable to convert thread to fiber");
                 }
 
-                let fiber = kernel32::CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
+                let fiber = CreateFiber(stack_size as _, Some(fiber_proc), &mut info as *mut FiberInfo as *mut _);
                 if fiber == 0i32 as _ {
                     panic!("unable to allocate fiber");
                 }
 
                 // Switch to the fiber we created. This changes stacks and starts executing
                 // fiber_proc on it. fiber_proc will run `callback` and then switch back
-                kernel32::SwitchToFiber(fiber);
+                SwitchToFiber(fiber);
 
                 // We are back on the old stack and now we have destroy the fiber and its stack
-                kernel32::DeleteFiber(fiber);
+                DeleteFiber(fiber);
 
                 // If we started out on a non-fiber thread, we converted that thread to a fiber.
                 // Here we convert back.
                 if !was_fiber {
-                    kernel32::ConvertFiberToThread();
+                    ConvertFiberToThread();
                 }
 
                 if let Err(payload) = info.result.unwrap() {
@@ -307,7 +313,7 @@ cfg_if! {
                 // some further logic to calculate the real stack
                 // guarantee. This logic is what is used on x86-32 and
                 // x86-64 Windows 10. Other versions and platforms may differ
-                kernel32::SetThreadStackGuarantee(&mut stack_guarantee)
+                SetThreadStackGuarantee(&mut stack_guarantee)
             };
             std::cmp::max(stack_guarantee, min_guarantee) as usize + 0x1000
         }
@@ -317,10 +323,10 @@ cfg_if! {
             let mut mi = std::mem::zeroed();
             // Query the allocation which contains our stack pointer in order
             // to discover the size of the stack
-            kernel32::VirtualQuery(
+            VirtualQuery(
                 __stacker_stack_pointer() as *const _,
                 &mut mi,
-                std::mem::size_of_val(&mi) as winapi::SIZE_T,
+                std::mem::size_of_val(&mi) as SIZE_T,
             );
             Some(mi.AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }
