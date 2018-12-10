@@ -47,6 +47,9 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(
     stack_size: usize,
     f: F,
 ) -> R {
+    if cfg!(unsupported) {
+        return f();
+    }
     // if we can't guess the remaining stack (unsupported on some platforms)
     // we immediately grow the stack and then cache the new stack size (which
     // we do know now because we know by how much we grew the stack)
@@ -94,12 +97,18 @@ fn get_stack_limit() -> Option<usize> {
     STACK_LIMIT.with(|s| s.get())
 }
 
+#[cfg(not(unsupported))]
 fn set_stack_limit(l: Option<usize>) {
     STACK_LIMIT.with(|s| s.set(l))
 }
 
 cfg_if! {
-    if #[cfg(not(windows))] {
+    if #[cfg(unsupported)] {
+        fn _grow(stack_size: usize, f: &mut FnMut()) {
+            drop(stack_size);
+            f();
+        }
+    } else if #[cfg(not(windows))] {
         extern {
             fn __stacker_switch_stacks(dataptr: *mut u8,
                                        fnptr: *const u8,

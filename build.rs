@@ -16,8 +16,9 @@ fn main() {
         cfg.define("WINDOWS", None);
         cfg.file("src/arch/windows.c");
     } else {
-        panic!("\n\nusing currently unsupported target triple with \
-                stacker: {}\n\n", target);
+        println!("cargo:warning=unsupported platform: {}", target);
+        println!("cargo:rustc-cfg=unsupported");
+        return
     }
 
     if target.starts_with("x86_64") {
@@ -27,8 +28,9 @@ fn main() {
         cfg.file(if msvc {"src/arch/i686.asm"} else {"src/arch/i686.S"});
         cfg.define("X86", None);
     } else {
-        panic!("\n\nusing currently unsupported target triple with \
-                stacker: {}\n\n", target);
+        println!("cargo:warning=unsupported platform: {}", target);
+        println!("cargo:rustc-cfg=unsupported");
+        return
     }
 
     cfg.include("src/arch").compile("libstacker.a");
