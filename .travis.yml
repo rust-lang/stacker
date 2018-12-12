@@ -16,20 +16,22 @@ matrix:
     - env: TARGET=aarch64-linux-android
     - env: TARGET=arm-linux-androideabi
     - env: TARGET=armv7-linux-androideabi
-    - env: TARGET=i686-linux-android
+    # does not work?
+    # - env: TARGET=i686-linux-android
     - env: TARGET=x86_64-linux-android
 
     # iOS
-    - env: TARGET=aarch64-apple-ios
-      os: osx
-    - env: TARGET=armv7-apple-ios
-      os: osx
-    - env: TARGET=armv7s-apple-ios
-      os: osx
-    - env: TARGET=i386-apple-ios
-      os: osx
-    - env: TARGET=x86_64-apple-ios
-      os: osx
+    # None of these seem to work?
+    # - env: TARGET=aarch64-apple-ios
+    #   os: osx
+    # - env: TARGET=armv7-apple-ios
+    #   os: osx
+    # - env: TARGET=armv7s-apple-ios
+    #   os: osx
+    # - env: TARGET=i386-apple-ios
+    #   os: osx
+    # - env: TARGET=x86_64-apple-ios
+    #   os: osx
 
     # Linux
     - env: TARGET=aarch64-unknown-linux-gnu

@@ -10,11 +10,11 @@ main() {
         return
     fi
 
-    cross test --target $TARGET
-    cross test --target $TARGET --release
+    cross test --target $TARGET -- --nocapture
+    cross test --target $TARGET --release -- --nocapture
 
-    cross test --target $TARGET --examples
-    cross test --target $TARGET --examples --release
+    cross test --target $TARGET --examples -- --nocapture
+    cross test --target $TARGET --examples --release -- --nocapture
 }
 
 # we don't run the "test phase" when doing deploys

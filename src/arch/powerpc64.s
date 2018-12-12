@@ -1,7 +1,12 @@
-#include "psm.h"
-/* FIXME: this probably does not cover all ABIs? Tested with sysv only, possibly works for AIX as
-   well?
+/* Implementation of the AIX-like PowerPC ABI. Seems to be used by the big-endian PowerPC targets.
+   The following references were used during the implementation of this code:
+
+   https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_rntime_stack.htm
+   https://www.ibm.com/support/knowledgecenter/en/ssw_aix_72/com.ibm.aix.alangref/idalangref_reg_use_conv.htm
+   https://www.ibm.com/developerworks/library/l-powasm4/index.html
 */
+
+#include "psm.h"
 
 .text
 .globl rust_psm_stack_direction
@@ -36,8 +41,10 @@ rust_psm_stack_pointer:
 rust_psm_replace_stack:
 /* extern "C" fn(3: usize, 4: extern "C" fn(usize), 5: *mut u8) */
 .cfi_startproc
-/* NOTE: perhaps add a debug-assertion for stack alignment? */
-    addi 5, 5, -16
+    ld 2, 8(4)
+    ld 4, 0(4)
+    /* do not allocate the whole 112-byte sized frame, we know wont be used */
+    addi 5, 5, -48
     mr 1, 5
     mtctr 4
     bctr
@@ -53,22 +60,29 @@ rust_psm_on_stack:
 /* extern "C" fn(3: usize, 4: usize, 5: extern "C" fn(usize, usize), 6: *mut u8) */
 .cfi_startproc
     mflr 0
-    stw 0, -24(6)
+    std 2, -72(6)
+    std 0, -8(6)
     sub 6, 6, 1
-    addi 6, 6, -32
-    stwux 1, 1, 6
-    .cfi_def_cfa r1, 32
-    .cfi_offset r1, -32
-    .cfi_offset lr, -24
+    addi 6, 6, -112
+    stdux 1, 1, 6
+    .cfi_def_cfa r1, 112
+    .cfi_offset r1, -112
+    .cfi_offset r2, -72
+    .cfi_offset lr, -8
+    /* load the function pointer from TOC and make the call */
+    ld 2, 8(5)
+    ld 5, 0(5)
     mtctr 5
     bctrl
-    lwz 0, 8(1)
+    ld 2, 40(1)
+    .cfi_restore r2
+    ld 0, 104(1)
     mtlr 0
     .cfi_restore lr
-    /* FIXME: after this instruction backtrace breaks until control returns to the caller
+    /* FIXME: after this instruction backtrace breaks until control returns to the caller.
        That being said compiler-generated code has the same issue, so I guess that is fine for now?
     */
-    lwz 1, 0(1)
+    ld 1, 0(1)
     .cfi_restore r1
     blr
 .rust_psm_on_stack_end:

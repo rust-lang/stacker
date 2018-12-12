@@ -3,14 +3,14 @@ use std::alloc;
 
 #[inline(never)]
 fn fib(n: usize, stack_limit: *mut u8) -> Option<u64> {
-    match psm::StackDirection::new() {
-        psm::StackDirection::Ascending => if psm::stack_pointer() > stack_limit {
-            return None;
-        }
-        psm::StackDirection::Descending => if psm::stack_pointer() < stack_limit {
-            return None;
-        }
-    }
+    // match psm::StackDirection::new() {
+    //     psm::StackDirection::Ascending => if psm::stack_pointer() > stack_limit {
+    //         return None;
+    //     }
+    //     psm::StackDirection::Descending => if psm::stack_pointer() < stack_limit {
+    //         return None;
+    //     }
+    // }
 
     match n {
         0 => Some(0),
@@ -29,7 +29,7 @@ const FIB_COUNTS: [(usize, u64); 3] = [
 
 
 fn main() {
-    let mut stack_size = 1024;
+    let mut stack_size = 1024 * 128;
     unsafe {
         for &(n, expected) in FIB_COUNTS.iter() {
             loop {

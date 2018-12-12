@@ -1,30 +1,28 @@
 extern crate cc;
 
-fn find_assembly(arch: &str, env: &str) -> Option<&'static str> {
-    const ARCH_ENV_IMPL_MAP: [((&str, &str), Option<&str>); 8] = [
-        (("*", "msvc"), None),
-        (("x86", "*"), Some("src/arch/x86.s")),
-        (("x86_64", "*"), Some("src/arch/x86_64.s")),
-        (("arm", "*"), Some("src/arch/arm_aapcs.s")),
-        (("armv7", "*"), Some("src/arch/arm_aapcs.s")),
-        (("thumbv6", "*"), Some("src/arch/arm_aapcs.s")),
-        (("thumbv7", "*"), Some("src/arch/arm_aapcs.s")),
-        (("aarch64", "*"), Some("src/arch/aarch_aapcs64.s")),
-    ];
-
-    for ((exparch, expenv), file) in &ARCH_ENV_IMPL_MAP {
-        if (exparch == &arch || exparch == &"*") && (expenv == &env || expenv == &"*") {
-            return *file;
-        }
+fn find_assembly(arch: &str, endian: &str, env: &str) -> Option<&'static str> {
+    match (arch, endian, env) {
+        (_,            _,        "msvc") => None,
+        ("x86",        _,        _) => Some("src/arch/x86.s"),
+        ("x86_64",     _,        _) => Some("src/arch/x86_64.s"),
+        ("arm",        _,        _) => Some("src/arch/arm_aapcs.s"),
+        ("armv7",      _,        _) => Some("src/arch/arm_aapcs.s"),
+        ("thumbv6",    _,        _) => Some("src/arch/arm_aapcs.s"),
+        ("thumbv7",    _,        _) => Some("src/arch/arm_aapcs.s"),
+        ("aarch64",    _,        _) => Some("src/arch/aarch_aapcs64.s"),
+        ("powerpc",    _,        _) => Some("src/arch/powerpc32.s"),
+        ("powerpc64",  "little", _) => Some("src/arch/powerpc64-openpower.s"),
+        ("powerpc64",  _,        _) => Some("src/arch/powerpc64.s"),
+        _ => None,
     }
-    None
 }
 
 fn main() {
     let arch = ::std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let env = ::std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
     let os = ::std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    let asm = if let Some(asm) = find_assembly(&arch, &env) {
+    let endian = ::std::env::var("CARGO_CFG_TARGET_ENDIAN").unwrap();
+    let asm = if let Some(asm) = find_assembly(&arch, &endian, &env) {
         asm
     } else {
         eprintln!("({}, {}) arch-env pair is not supported", arch, env);

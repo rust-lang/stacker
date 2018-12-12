@@ -156,7 +156,7 @@ pub unsafe fn replace_stack<F: FnOnce()>(base: *mut u8, size: usize, callback: F
 ///
 /// This is a target-specific property that can be obtained at runtime by calling
 /// `StackDirection::new()`.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum StackDirection {
     Ascending = 1,
     Descending = 2,
