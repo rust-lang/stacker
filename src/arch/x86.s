@@ -78,8 +78,8 @@ FUNCTION(rust_psm_on_stack):
 .cfi_startproc
     pushl %ebp
     movl  %esp, %ebp
-    movl  8(%ebp), %esp
-    calll *4(%ebp)
+    movl  12(%ebp), %esp
+    calll *8(%ebp)
     movl  %ebp, %esp
     popl  %ebp
     retl  $8
