@@ -100,3 +100,7 @@ before_cache:
 
 notifications:
   email: false
+
+branches:
+  only:
+    - "master"
