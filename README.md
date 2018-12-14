@@ -26,6 +26,10 @@ This library currently is verified to work on the following platforms:
 * 32/64 bit MinGW Windows
 * 32/64 bit MSVC Windows
 
+On all other platforms this library is a noop. It should compile and run, but it
+won't actually grow the stack and code will continue to hit the guard pages
+typically in place.
+
 # License
 
 This project is licensed under either of
@@ -40,5 +44,5 @@ at your option.
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in Serde by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+for inclusion in this project by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
