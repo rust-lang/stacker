@@ -109,6 +109,9 @@ cfg_if! {
             f();
         }
     } else if #[cfg(not(windows))] {
+        use std::any::Any;
+        use std::panic::{self, AssertUnwindSafe};
+
         extern {
             fn __stacker_switch_stacks(dataptr: *mut u8,
                                        fnptr: *const u8,
@@ -131,7 +134,7 @@ cfg_if! {
             }
         }
 
-        fn _grow(stack_size: usize, mut f: &mut FnMut()) {
+        fn _grow(stack_size: usize, f: &mut FnMut()) {
             let page_size = unsafe { getpagesize() } as usize;
 
             // Round the stack size up to a multiple of page_size
@@ -192,14 +195,27 @@ cfg_if! {
                 0
             };
 
-            extern fn doit(f: &mut &mut FnMut()) {
-                f();
+            struct Context<'a> {
+                closure: &'a mut FnMut(),
+                panic: Option<Box<Any+Send>>,
+            }
+
+            extern fn doit(cx: &mut Context) {
+                let closure = AssertUnwindSafe(&mut cx.closure);
+                cx.panic = panic::catch_unwind(closure).err();
             }
 
             unsafe {
-                __stacker_switch_stacks(&mut f as *mut &mut FnMut() as *mut u8,
+                let mut cx = Context {
+                    closure: f,
+                    panic: None,
+                };
+                __stacker_switch_stacks(&mut cx as *mut Context as *mut u8,
                                         doit as usize as *const _,
                                         stack_low + stack_size - offset);
+                if let Some(panic) = cx.panic.take() {
+                    panic::resume_unwind(panic);
+                }
             }
 
             // Dropping `switch` frees the memory mapping and restores the old stack limit
