@@ -13,6 +13,7 @@ fn find_assembly(arch: &str, endian: &str, env: &str) -> Option<&'static str> {
         ("powerpc",    _,        _) => Some("src/arch/powerpc32.s"),
         ("powerpc64",  "little", _) => Some("src/arch/powerpc64-openpower.s"),
         ("powerpc64",  _,        _) => Some("src/arch/powerpc64.s"),
+        ("s390x",      _,        _) => Some("src/arch/zseries-linux.s"),
         _ => None,
     }
 }
