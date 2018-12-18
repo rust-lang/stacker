@@ -18,9 +18,6 @@ name = "stacker"
 doctest = false
 test = false
 
-# TODO: Is that ok?
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cfg-if = "0.1.6"
 libc = "0.2.45"
@@ -34,9 +31,6 @@ features = [
   'processthreadsapi',
   'minwindef',
 ]
-
-[dev-dependencies]
-wasm-bindgen-test = "0.2"
 
 [build-dependencies]
 cc = "1.0"

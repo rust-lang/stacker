@@ -1,4 +1,5 @@
 #![cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+#![cfg(test)]
 
 extern crate stacker;
 extern crate wasm_bindgen_test;

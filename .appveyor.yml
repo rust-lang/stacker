@@ -20,7 +20,7 @@ install:
 build: false
 
 test_script:
-  - if "%TARGET%" == "wasm32-unknown-unknown" wasm-pack test --chrome --headless --release
+  - if "%TARGET%" == "wasm32-unknown-unknown" wasm-pack test --chrome --headless --release wasm-tests
   - if NOT "%TARGET%" == "wasm32-unknown-unknown" cargo test --target %TARGET% && cargo test --release --target %TARGET%
 
 branches:

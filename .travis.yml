@@ -9,7 +9,7 @@ matrix:
         - rustup target add $TARGET
         - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       script:
-        - wasm-pack test --chrome --headless --release
+        - wasm-pack test --chrome --headless --release wasm-tests
       addons:
         chrome: stable
     - env: TARGET=i686-unknown-linux-gnu
