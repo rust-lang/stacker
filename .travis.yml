@@ -7,7 +7,7 @@ matrix:
     - env: TARGET=wasm32-unknown-unknown
       install: 
         - rustup target add $TARGET
-        - cargo install wasm-pack
+        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       script:
         - wasm-pack test --chrome --headless --release
       addons:
