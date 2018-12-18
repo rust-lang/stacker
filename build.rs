@@ -11,9 +11,11 @@ fn find_assembly(arch: &str, endian: &str, env: &str) -> Option<&'static str> {
         ("thumbv7",    _,        _) => Some("src/arch/arm_aapcs.s"),
         ("aarch64",    _,        _) => Some("src/arch/aarch_aapcs64.s"),
         ("powerpc",    _,        _) => Some("src/arch/powerpc32.s"),
-        ("powerpc64",  "little", _) => Some("src/arch/powerpc64-openpower.s"),
+        ("powerpc64",  "little", _) => Some("src/arch/powerpc64_openpower.s"),
         ("powerpc64",  _,        _) => Some("src/arch/powerpc64.s"),
-        ("s390x",      _,        _) => Some("src/arch/zseries-linux.s"),
+        ("s390x",      _,        _) => Some("src/arch/zseries_linux.s"),
+        ("mips",       _,        _) => Some("src/arch/mips_eabi.s"),
+        ("mips64",     _,        _) => Some("src/arch/mips64_eabi.s"),
         _ => None,
     }
 }
