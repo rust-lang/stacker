@@ -8,11 +8,10 @@
 __stacker_switch_stacks:                # @__stacker_switch_stacks
 	
 	.functype	__stacker_switch_stacks (i32, i32, i32) -> ()
-	.local  	i32 # temporary storage for the original stack pointer
+	.local i32 # It is workaround for LLVM and serves no other purpose.
 # %bb.0:                                # %entry
-	# save current stack pointer
+	# push current stack pointer on the stack
 	get_global	__stack_pointer@GLOBAL
-	set_local	3
 
 	# swap stack pointer with the given one
 	get_local	0
@@ -23,8 +22,7 @@ __stacker_switch_stacks:                # @__stacker_switch_stacks
 	get_local	1
 	call_indirect	typeindex0@TYPEINDEX
 
-	# restore sp
-	get_local 3
+	# pop the previous value of the SP store and store it
 	set_global	__stack_pointer@GLOBAL
 
 	return
