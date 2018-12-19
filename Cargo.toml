@@ -2,7 +2,12 @@
 name = "psm"
 version = "0.1.0"
 authors = ["Simonas Kazlauskas <git@kazlauskas.me>"]
-edition = "2018"
+build = "build.rs"
+description = "Portable Stack Manipulator: stack manipulation and introspection routines"
+keywords = ["stack", "no_std"]
+license = "ISC/Apache-2.0"
+repository = "https://github.com/nagisa/psm/"
+documentation = "https://docs.rs/psm/0.1.0"
 
 [dependencies]
 

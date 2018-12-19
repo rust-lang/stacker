@@ -11,65 +11,164 @@ the crates.io’s reverse dependency list.
 
 # Platform support
 
+The following table lists supported targets and architectures with notes on the level of current
+support and knowledge about the target. The three columns “Available”, “Tested” and “Callstack”
+imply an increasingly high level of support.
+
+* “Available” basically means that the code builds and the assembly files have been written for the
+  target;
+* “Tested” means that the assembly code has been tested or otherwise verified to be correct. For
+  most targets it means that continuous integration is set up;
+* “Callstack” means that the assembly code has been written with due care to support unwinding the
+  stack and showing the call frames (i.e. `gdb backtrace` works as expected).
+
 <table>
 <tr>
-    <th rowspan="3">Target</th>
+    <th rowspan="1" colspan="2">Target</th>
     <th colspan="3">Support</th>
 </tr>
 <tr>
-    <th>General</th>
+    <th rowspan="2">Architecture</th>
+    <th rowspan="2">OS</th>
+    <th>Available</th>
+    <th>Tested</th>
     <th>Callstack</th>
-    <th>Verified</th>
 </tr>
 <tr>
     <th colspan="3">Notes</th>
 </tr>
 
 <tr>
-    <td rowspan="2">x86_64-*</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗹, CI</td>
+    <td rowspan="6">x86_64</td>
+    <td rowspan="2">apple-ios</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Unknown</td>
 </tr>
 <tr>
     <td colspan="3">
-    x86_64-apple-ios has been tested locally.
-    Assembly code for *-msvc targets is not yet available.
+    Target has been tested locally.
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">pc-windows-msvc</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Assembly hasn’t been written yet
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">*</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td></td>
+</tr>
+
+<tr>
+    <td rowspan="8">i686<br>i586<br>i386</td>
+    <td rowspan="2">pc-windows-msvc</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Assembly hasn’t been written yet
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">apple-ios</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">linux-android</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    The assembly files are available, but the target hasn’t been verified to build
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">*</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    The assembly files are available, but the target hasn’t been verified to build
     </td>
 </tr>
 
 <tr>
-    <td rowspan = "2">i686-*<br>i386-*</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗹, CI</td>
+    <td rowspan="6">aarch64</td>
+    <td rowspan="2">apple-ios</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
 </tr>
 <tr>
     <td colspan="3">
-    i386-apple-ios is untested.
-    i686-linux-android is untested.
-    Assembly code for *-msvc targets is not yet available.
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">aarch64-*</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗹, CI</td>
-</tr>
-<tr>
-    <td colspan="3">
-    Only targets using the standard AAPCS calling convention are supported currently.
     aarch64-apple-ios has not been tested.
     </td>
 </tr>
+<tr>
+    <td rowspan="2">fuchsia<br>unknown-cloudabi</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Will probably compile, and work if fuchsia uses AAPCS calling convention.
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">*</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Only targets using the standard AAPCS calling convention are supported currently.
+    </td>
+</tr>
+
 
 <tr>
-    <td rowspan="2">arm-*<br>armv7-*</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗹, CI</td>
+    <td rowspan="4">arm<br>armv7</td>
+    <td rowspan="2">apple-ios</td>
+    <td>Yes</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+</tr>
+<tr>
+    <td colspan="3">
+    armv7-apple-ios has not been tested.
+    </td>
+</tr>
+<tr>
+    <td rowspan="2">*</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Unknown</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -78,20 +177,23 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">armv5te-*</td>
-    <td>?, Unknown</td>
-    <td>?, Unknown</td>
-    <td>?, Unknown</td>
+    <td rowspan="2">armv5te</td>
+    <td rowspan="2">*</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3"></td>
+    <td colspan="3">
+    </td>
 </tr>
 
 <tr>
-    <td rowspan="2">thumbv6*-*<br>thumbv7*-*</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗵</td>
+    <td rowspan="2">thumbv6<br>thumbv7</td>
+    <td rowspan="2">*</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -100,102 +202,114 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">mips-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">mips<br>mipsel</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">Haven’t gotten to it yet…</td>
+    <td colspan="3">Only the o32 ABI is supported and will be used for all MIPS targets...</td>
 </tr>
 
 <tr>
-    <td rowspan="2">powerpc-unknown-linux-gnu</td>
-    <td>🗹, Yes</td>
-    <td>🗹, Yes</td>
-    <td>🗹, CI</td>
+    <td rowspan="2">mips64<br>mips64el</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
+</tr>
+<tr>
+    <td colspan="3">Only the o32 ABI is supported and will be used for all MIPS targets...</td>
+</tr>
+
+<tr>
+    <td rowspan="2">powerpc</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
 </tr>
 <tr>
     <td colspan="3">
     Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points.
+    compiler-generated code fails at similar points itself.
     </td>
 </tr>
 
 <tr>
-    <td rowspan="2">powerpc64-unknown-linux-gnu</td>
-    <td>🗹, Yes</td>
-    <td>🗹, Yes</td>
-    <td>🗹, CI</td>
+    <td rowspan="2">powerpc64</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
 </tr>
 <tr>
     <td colspan="3">
     Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points.
+    compiler-generated code fails at similar points itself.
     </td>
 </tr>
 
 <tr>
-    <td rowspan="2">powerpc64le-unknown-linux-gnu</td>
-    <td>🗹, Yes</td>
-    <td>🗹, Yes</td>
-    <td>🗹, CI</td>
+    <td rowspan="2">powerpc64le</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Yes</td>
+    <td>Yes</td>
 </tr>
 <tr>
     <td colspan="3">
     Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points.
+    compiler-generated code fails at similar points itself.
     </td>
 </tr>
 
 <tr>
-    <td rowspan="2">s390x-unknown-linux-gnu</td>
-    <td>🗹, Yes</td>
-    <td>?, Unknown</td>
-    <td>🗹, Locally</td>
-</tr>
-<tr>
-    <td colspan="3">Test runner on CI hangs...</td>
-</tr>
-
-<tr>
-    <td rowspan="2">sparc-unknown-linux-gnu</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-</tr>
-<tr>
-    <td colspan="3">Machine to ssh into wanted (setting up a VM failed…)</td>
-</tr>
-
-<tr>
-    <td rowspan="2">sparc64-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-</tr>
-<tr>
-    <td colspan="3">Machine to ssh into wanted (setting up a VM failed…)</td>
-</tr>
-
-<tr>
-    <td rowspan="2">sparcv9-sun-solaris</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">s390x</td>
+    <td rowspan="2">linux</td>
+    <td>Yes</td>
+    <td>Locally</td>
+    <td>Unknown</td>
 </tr>
 <tr>
     <td colspan="3">
-    Machine to ssh into wanted (setting up a VM failed…)
-    Where does one even get a solaris?
+    Test runner on CI hangs...
     </td>
 </tr>
 
 <tr>
-    <td rowspan="2">wasm-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">sparc</td>
+    <td rowspan="2">linux</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Haven’t gotten to it yet...
+    </td>
+</tr>
+
+<tr>
+    <td rowspan="2">sparc64<br>sparcv9</td>
+    <td rowspan="2">linux</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
+</tr>
+<tr>
+    <td colspan="3">
+    Haven’t gotten to it yet...
+    </td>
+</tr>
+
+<tr>
+    <td rowspan="2">wasm</td>
+    <td rowspan="2">*</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -205,10 +319,11 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">asmjs-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">asmjs</td>
+    <td rowspan="2">*</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -217,10 +332,11 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">nvptx-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">nvptx</td>
+    <td rowspan="2">*</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -229,10 +345,11 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">msp430-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">msp430</td>
+    <td rowspan="2">*</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -241,10 +358,11 @@ the crates.io’s reverse dependency list.
 </tr>
 
 <tr>
-    <td rowspan="2">riscv-*</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
-    <td>🗵, No</td>
+    <td rowspan="2">riscv</td>
+    <td rowspan="2">*</td>
+    <td>No</td>
+    <td>No</td>
+    <td>No</td>
 </tr>
 <tr>
     <td colspan="3">
@@ -252,3 +370,14 @@ the crates.io’s reverse dependency list.
     </td>
 </tr>
 </table>
+
+# License
+
+PSM is licensed under either of
+
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+   http://www.apache.org/licenses/LICENSE-2.0)
+ * ISC license ([LICENSE-ISC](LICENSE-ISC) or
+   http://opensource.org/licenses/ISC)
+
+at your option.
