@@ -1,15 +1,14 @@
-//! Portable stack manipulation (and introspection) routines.
+//! # **P**ortable **S**tack **M**anipulator
 //!
 //! This crate provides very portable functions to control the stack pointer and inspect the
-//! properties about the stack. This crate does not attempt to provide safe abstractions to any
-//! operations, the only goal is speed and portability. As a consequence most functions you’ll see
-//! in this crate are unsafe.
+//! properties of the stack. This crate does not attempt to provide safe abstractions to any
+//! operations, the only goals are correctness, portability and efficiency (in that exact order).
+//! As a consequence most functions you’ll see in this crate are unsafe.
 //!
 //! Unless you’re writing a safe abstraction over stack manipulation, this is not the crate you
 //! want. Instead consider one of the safe abstractions over this crate. A good place to look at is
 //! the crates.io’s reverse dependency list.
-//!
-//!
+// TODO: insert a link to stacker once it is moved on top of this crate.
 
 #![allow(unused_macros)]
 #![no_std]
