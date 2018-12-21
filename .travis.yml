@@ -46,9 +46,15 @@ matrix:
     - env: TARGET=powerpc-unknown-linux-gnu
     - env: TARGET=powerpc64-unknown-linux-gnu
     - env: TARGET=powerpc64le-unknown-linux-gnu
-      # Testing hangs, should be verified once-in-a-while manually.
+    # FIXME: Testing hangs, should be verified once-in-a-while manually.
+    # could be made work by using full system emulation
     - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
-      #    - env: TARGET=sparc...
+    # FIXME: tests could be made work by using full system emulation
+    - env: TARGET=sparc64-unknown-linux-gnu DISABLE_TESTS=1
+    # Not even a distribution exists that supports 32-bit SPARC...
+    # - env: TARGET=sparc-unknown-linux-gnu DISABLE_TESTS=1
+    # No Rustc for the target
+    # - env: TARGET=sparcv9-sun-solaris DISABLE_TESTS=1
     - env: TARGET=x86_64-unknown-linux-gnu
     - env: TARGET=x86_64-unknown-linux-musl
 
