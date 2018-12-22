@@ -69,7 +69,7 @@ Assembly hasn’t been written yet
 <td rowspan="2">&#42;</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td></td>
@@ -115,14 +115,11 @@ The assembly files are available, but the target hasn’t been verified to build
 <tr>
 <td rowspan="2">&#42;</td>
 <td>Yes</td>
-<td>Unknown</td>
-<td>Unknown</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
-
-The assembly files are available, but the target hasn’t been verified to build
-
 </td>
 </tr>
 

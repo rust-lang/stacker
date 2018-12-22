@@ -109,11 +109,15 @@ FUNCTION(rust_psm_on_stack):
 /* extern "sysv64" fn(%rdi: usize, %rsi: usize, %rdx: extern "sysv64" fn(usize, usize), %rcx: *mut u8) */
 .cfi_startproc
     pushq %rbp
+    .cfi_def_cfa %rsp, 16
+    .cfi_offset %rbp, -16
     movq  %rsp, %rbp
+    .cfi_def_cfa_register %rbp
     movq  %rcx, %rsp
     callq *%rdx
     movq  %rbp, %rsp
     popq  %rbp
+    .cfi_def_cfa %rsp, 8
     retq
 .rust_psm_on_stack_end:
 SIZE(rust_psm_on_stack,.rust_psm_on_stack_end)

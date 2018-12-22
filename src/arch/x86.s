@@ -115,11 +115,15 @@ FUNCTION(rust_psm_on_stack,16):
 /* extern "fastcall" fn(%ecx: usize, %edx: usize, 4(%esp): extern "fastcall" fn(usize, usize), 8(%esp): *mut u8) */
 .cfi_startproc
     pushl %ebp
+    .cfi_def_cfa %esp, 8
+    .cfi_offset %ebp, -8
     movl  %esp, %ebp
+    .cfi_def_cfa_register %ebp
     movl  12(%ebp), %esp
     calll *8(%ebp)
     movl  %ebp, %esp
     popl  %ebp
+    .cfi_def_cfa %esp, 4
     retl  $8
 .rust_psm_on_stack_end:
 SIZE(rust_psm_on_stack,.rust_psm_on_stack_end)
