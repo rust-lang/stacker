@@ -128,7 +128,7 @@ The assembly files are available, but the target hasn’t been verified to build
 <td rowspan="2">apple-ios</td>
 <td>Yes</td>
 <td>Unknown</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
@@ -141,7 +141,7 @@ aarch64-apple-ios has not been tested. iOS hardware is necessary to run these te
 <td rowspan="2">fuchsia<br>unknown-cloudabi</td>
 <td>Unknown</td>
 <td>Unknown</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
@@ -154,7 +154,7 @@ Will probably compile, and work if fuchsia uses AAPCS calling convention.
 <td rowspan="2">&#42;</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">

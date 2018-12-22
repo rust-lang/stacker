@@ -66,11 +66,19 @@ FUNCTION(rust_psm_on_stack):
 /* extern "C" fn(r0: usize, r1: usize, r2: extern "C" fn(usize, usize), r3: *mut u8) */
 .cfi_startproc
     stp x29, x30, [sp, #-16]!
+    .cfi_def_cfa sp, 16
     mov x29, sp
+    .cfi_def_cfa x29, 16
+    .cfi_offset x29, -16
+    .cfi_offset x30, -8
     mov sp, x3
     blr x2
     mov sp, x29
+    .cfi_def_cfa sp, 16
     ldp x29, x30, [sp], #16
+    .cfi_def_cfa sp, 0
+    .cfi_restore x29
+    .cfi_restore x30
     ret
 .rust_psm_on_stack_end:
 SIZE(rust_psm_on_stack,.rust_psm_on_stack_end)
