@@ -24,407 +24,421 @@ imply an increasingly high level of support.
 
 <table>
 <tr>
-    <th rowspan="1" colspan="2">Target</th>
-    <th colspan="3">Support</th>
+<th rowspan="1" colspan="2">Target</th>
+<th colspan="3">Support</th>
 </tr>
 <tr>
-    <th rowspan="2">Architecture</th>
-    <th rowspan="2">OS</th>
-    <th>Available</th>
-    <th>Tested</th>
-    <th>Callstack</th>
+<th rowspan="2">Architecture</th>
+<th rowspan="2">OS</th>
+<th>Available</th>
+<th>Tested</th>
+<th>Callstack</th>
 </tr>
 <tr>
-    <th colspan="3">Notes</th>
-</tr>
-
-<tr>
-    <td rowspan="6">x86_64</td>
-    <td rowspan="2">apple-ios</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td colspan="3">
-    Target has been tested locally.
-    </td>
-</tr>
-<tr>
-    <td rowspan="2">pc-windows-msvc</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
-</tr>
-<tr>
-    <td colspan="3">
-    Assembly hasn’t been written yet
-    </td>
-</tr>
-<tr>
-    <td rowspan="2">*</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td></td>
+<th colspan="3">Notes</th>
 </tr>
 
 <tr>
-    <td rowspan="8">i686<br>i586<br>i386</td>
-    <td rowspan="2">pc-windows-msvc</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="6">x86_64</td>
+<td rowspan="2">apple-ios</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Assembly hasn’t been written yet
+Target has been tested locally.
 
-    </td>
+</td>
 </tr>
 <tr>
-    <td rowspan="2">apple-ios</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+<td rowspan="2">pc-windows-msvc</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
 </tr>
 <tr>
-    <td colspan="3">
-    </td>
-</tr>
-<tr>
-    <td rowspan="2">linux-android</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td colspan="3">
+<td colspan="3">
 
-    The assembly files are available, but the target hasn’t been verified to build
+Assembly hasn’t been written yet
 
-    </td>
+</td>
 </tr>
 <tr>
-    <td rowspan="2">*</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+<td rowspan="2">&#42;</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
-
-    The assembly files are available, but the target hasn’t been verified to build
-
-    </td>
+<td></td>
 </tr>
 
 <tr>
-    <td rowspan="6">aarch64</td>
-    <td rowspan="2">apple-ios</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+<td rowspan="8">i686<br>i586<br>i386</td>
+<td rowspan="2">pc-windows-msvc</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    aarch64-apple-ios has not been tested. iOS hardware is necessary to run these tests.
+Assembly hasn’t been written yet
 
-    </td>
+</td>
 </tr>
 <tr>
-    <td rowspan="2">fuchsia<br>unknown-cloudabi</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+<td rowspan="2">apple-ios</td>
+<td>Yes</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
-
-    Will probably compile, and work if fuchsia uses AAPCS calling convention.
-
-    </td>
+<td colspan="3">
+</td>
 </tr>
 <tr>
-    <td rowspan="2">*</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Unknown</td>
+<td rowspan="2">linux-android</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Only targets using the standard AAPCS calling convention are supported currently.
+The assembly files are available, but the target hasn’t been verified to build
 
-    </td>
-</tr>
-
-
-<tr>
-    <td rowspan="4">arm<br>armv7</td>
-    <td rowspan="2">apple-ios</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+</td>
 </tr>
 <tr>
-    <td colspan="3">
-
-    armv7-apple-ios has not been tested. iOS hardware is necessary to run these tests.
-
-    </td>
+<td rowspan="2">&#42;</td>
+<td>Yes</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td rowspan="2">*</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Only targets using the standard AAPCS calling convention are supported currently.
+The assembly files are available, but the target hasn’t been verified to build
 
-    </td>
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">armv5te</td>
-    <td rowspan="2">*</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+<td rowspan="6">aarch64</td>
+<td rowspan="2">apple-ios</td>
+<td>Yes</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
-    </td>
-</tr>
+<td colspan="3">
 
-<tr>
-    <td rowspan="2">thumbv6<br>thumbv7</td>
-    <td rowspan="2">*</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
+aarch64-apple-ios has not been tested. iOS hardware is necessary to run these tests.
+
+</td>
 </tr>
 <tr>
-    <td colspan="3">
-
-    Only targets using the standard AAPCS calling convention are supported currently.
-
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">mips<br>mipsel</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Yes</td>
+<td rowspan="2">fuchsia<br>unknown-cloudabi</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Only the o32 ABI is supported and will be used for all 32-bit MIPS targets.
+Will probably compile, and work if fuchsia uses AAPCS calling convention.
 
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">mips64<br>mips64el</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Yes</td>
+</td>
 </tr>
 <tr>
-    <td colspan="3">
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">powerpc</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Yes</td>
+<td rowspan="2">&#42;</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points itself.
+Only targets using the standard AAPCS calling convention are supported currently.
 
-    </td>
+</td>
 </tr>
 
+
 <tr>
-    <td rowspan="2">powerpc64</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Yes</td>
+<td rowspan="4">arm<br>armv7</td>
+<td rowspan="2">apple-ios</td>
+<td>Yes</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points itself.
+armv7-apple-ios has not been tested. iOS hardware is necessary to run these tests.
 
-    </td>
+</td>
+</tr>
+<tr>
+<td rowspan="2">&#42;</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Unknown</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Only targets using the standard AAPCS calling convention are supported currently.
+
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">powerpc64le</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Yes</td>
-    <td>Yes</td>
+<td rowspan="2">armv5te</td>
+<td rowspan="2">&#42;</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
-
-    Callstack generation may fail at certain well defined ranges of the program, although the usual
-    compiler-generated code fails at similar points itself.
-
-    </td>
+<td colspan="3">
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">s390x</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Locally</td>
-    <td>Unknown</td>
+<td rowspan="2">thumbv6<br>thumbv7</td>
+<td rowspan="2">&#42;</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Test runner on CI hangs, local verification has been done on a qemu-system-s390x VM. It may be
-    possible to add CI testing in the future via qemu’s full-system emulation.
+Only targets using the standard AAPCS calling convention are supported currently.
 
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">sparc</td>
-    <td rowspan="2">linux</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td colspan="3">
-
-    A Rust target for 32-bit SPARC exists, but no Linux distributions actually have a 32-bit SPARC
-    distribution, so verification is infeasible.
-
-    The actual assembly code has been written conservatively, modelled after the 64-bit SPARC code.
-    and so has a non-zero chance of working.
-
-    </td>
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">sparc64</td>
-    <td rowspan="2">linux</td>
-    <td>Yes</td>
-    <td>Locally</td>
-    <td>Yes</td>
+<td rowspan="2">mips<br>mipsel</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">
+<td colspan="3">
 
-    Has been manually verified to work on the [GCC Farm Project] machines. It may be possible to
-    add CI testing in the future via qemu’s full-system emulation.
+Only the o32 ABI is supported and will be used for all 32-bit MIPS targets.
 
-    </td>
-</tr>
-
-<tr>
-    <td rowspan="2">sparc9</td>
-    <td rowspan="2">solaris</td>
-    <td>Yes</td>
-    <td>Unknown</td>
-    <td>Unknown</td>
-</tr>
-<tr>
-    <td colspan="3">
-
-    Uses the same assembly as the sparc64-linux-gnu target. This target has no rustc builds and
-    therefore the correct operation of this target could not be verified at the moment.
-
-    </td>
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">wasm</td>
-    <td rowspan="2">*</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="2">mips64<br>mips64el</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">
-    This library is not applicable to the target. WASM hasn’t a specified C ABI, the callstack is
-    not even in an address space and does not appear to be manipulatable.
-    </td>
+<td colspan="3">
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">asmjs</td>
-    <td rowspan="2">*</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="2">powerpc</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">
-    Feasibility/necessity hasn’t been acertained.
-    </td>
+<td colspan="3">
+
+Callstack generation may fail at certain well defined ranges of the program, although the usual
+compiler-generated code fails at similar points itself.
+
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">nvptx</td>
-    <td rowspan="2">*</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="2">powerpc64</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">
-    Feasibility/necessity hasn’t been acertained.
-    </td>
+<td colspan="3">
+
+Callstack generation may fail at certain well defined ranges of the program, although the usual
+compiler-generated code fails at similar points itself.
+
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">msp430</td>
-    <td rowspan="2">*</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="2">powerpc64le</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
-    <td colspan="3">
-    Haven’t gotten to it yet...
-    </td>
+<td colspan="3">
+
+Callstack generation may fail at certain well defined ranges of the program, although the usual
+compiler-generated code fails at similar points itself.
+
+</td>
 </tr>
 
 <tr>
-    <td rowspan="2">riscv</td>
-    <td rowspan="2">*</td>
-    <td>No</td>
-    <td>No</td>
-    <td>No</td>
+<td rowspan="2">s390x</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Locally</td>
+<td>Unknown</td>
 </tr>
 <tr>
-    <td colspan="3">
-    Haven’t gotten to it yet...
-    </td>
+<td colspan="3">
+
+Test runner on CI hangs, local verification has been done on a qemu-system-s390x VM. It may be
+possible to add CI testing in the future via qemu’s full-system emulation.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">sparc</td>
+<td rowspan="2">linux</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Unknown</td>
+</tr>
+<tr>
+<td colspan="3">
+
+A Rust target for 32-bit SPARC exists, but no Linux distributions actually have a 32-bit SPARC
+distribution, so verification is infeasible.
+
+The actual assembly code has been written conservatively, modelled after the 64-bit SPARC code.
+and so has a non-zero chance of working.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">sparc64</td>
+<td rowspan="2">linux</td>
+<td>Yes</td>
+<td>Locally</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Has been manually verified to work on the [GCC Farm Project] machines. It may be possible to
+add CI testing in the future via qemu’s full-system emulation.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">sparc9</td>
+<td rowspan="2">solaris</td>
+<td>Yes</td>
+<td>Unknown</td>
+<td>Unknown</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Uses the same assembly as the sparc64-linux-gnu target. This target has no rustc builds and
+therefore the correct operation of this target could not be verified at the moment.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">wasm</td>
+<td rowspan="2">&#42;</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td colspan="3">
+
+This library is not applicable to the target. WASM hasn’t a specified C ABI, the callstack is
+not even in an address space and does not appear to be manipulatable.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">asmjs</td>
+<td rowspan="2">&#42;</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Feasibility/necessity hasn’t been acertained.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">nvptx</td>
+<td rowspan="2">&#42;</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Feasibility/necessity hasn’t been acertained.
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">msp430</td>
+<td rowspan="2">&#42;</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Haven’t gotten to it yet...
+
+</td>
+</tr>
+
+<tr>
+<td rowspan="2">riscv</td>
+<td rowspan="2">&#42;</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td colspan="3">
+
+Haven’t gotten to it yet...
+
+</td>
 </tr>
 </table>
 
