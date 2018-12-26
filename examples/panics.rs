@@ -36,5 +36,7 @@ fn main() {
 
 #[test]
 fn run_example() {
-    panic_chain(CHAIN_DEPTH);
+    assert!(panic::catch_unwind(|| {
+        panic_chain(CHAIN_DEPTH);
+    }).is_err(), "Panic did not propagate!");
 }
