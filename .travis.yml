@@ -22,16 +22,6 @@ matrix:
 
     # iOS
     # None of these seem to work?
-    # - env: TARGET=aarch64-apple-ios
-    #   os: osx
-    # - env: TARGET=armv7-apple-ios
-    #   os: osx
-    # - env: TARGET=armv7s-apple-ios
-    #   os: osx
-    # - env: TARGET=i386-apple-ios
-    #   os: osx
-    # - env: TARGET=x86_64-apple-ios
-    #   os: osx
 
     # Linux
     - env: TARGET=aarch64-unknown-linux-gnu
@@ -85,6 +75,22 @@ matrix:
     - env: TARGET=x86_64-unknown-linux-gnu
       rust: nightly
     - env: TARGET=x86_64-apple-darwin
+      os: osx
+      rust: nightly
+    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
+      os: osx
+      rust: nightly
+    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
+      os: osx
+      rust: nightly
+    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
+      os: osx
+      rust: nightly
+    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
+      os: osx
+      rust: nightly
+    # Why does this "just" run without even a simulator?
+    - env: TARGET=x86_64-apple-ios
       os: osx
       rust: nightly
 

@@ -43,7 +43,7 @@ imply an increasingly high level of support.
 <td rowspan="2">apple-ios</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
@@ -334,7 +334,7 @@ compiler-generated code fails at similar points itself.
 <td rowspan="2">linux</td>
 <td>Yes</td>
 <td>Locally</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
