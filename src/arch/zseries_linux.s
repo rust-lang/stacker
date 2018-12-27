@@ -60,14 +60,15 @@ rust_psm_replace_stack:
 rust_psm_on_stack:
 /* extern "C" fn(r2: usize, r3: usize, r4: extern "C" fn(usize, usize), r5: *mut u8) */
 .cfi_startproc
-    /* FIXME: backtrace does not terminate cleanly for some reason and does not correctly
-       show frames past rust_psm_on_stack...
-    */
-    /* FIXME: add .cfi annotations */
     stmg %r14, %r15, -16(%r5)
     lay %r15, -176(%r5)
+    .cfi_def_cfa %r15, 176
+    .cfi_offset %r14, -16
+    .cfi_offset %r15, -8
     basr %r14, %r4
     lmg %r14, %r15, 160(%r15)
+    .cfi_restore %r14
+    .cfi_restore %r15
     br %r14
 .rust_psm_on_stack_end:
 .size       rust_psm_on_stack,.rust_psm_on_stack_end-rust_psm_on_stack
