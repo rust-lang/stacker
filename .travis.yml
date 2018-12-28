@@ -90,7 +90,7 @@ matrix:
       os: osx
       rust: nightly
     # Why does this "just" run without even a simulator?
-    - env: TARGET=x86_64-apple-ios
+    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
       os: osx
       rust: nightly
 
