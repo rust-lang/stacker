@@ -45,7 +45,7 @@ macro_rules! extern_item {
     };
 }
 
-#[cfg(any(target_arch = "arm", target_arch="aarch64"))]
+#[cfg(target_arch = "arm")]
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
         unsafe extern "aapcs" $($toks)+
