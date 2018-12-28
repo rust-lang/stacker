@@ -12,9 +12,6 @@ fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'sta
         ("x86",        _,        _,         _) => Some(("src/arch/x86.s", true)),
         ("x86_64",     _,        _,         _) => Some(("src/arch/x86_64.s", true)),
         ("arm",        _,        _,         _) => Some(("src/arch/arm_aapcs.s", true)),
-        ("armv7",      _,        _,         _) => Some(("src/arch/arm_aapcs.s", true)),
-        ("thumbv6",    _,        _,         _) => Some(("src/arch/arm_aapcs.s", true)),
-        ("thumbv7",    _,        _,         _) => Some(("src/arch/arm_aapcs.s", true)),
         ("aarch64",    _,        _,         _) => Some(("src/arch/aarch_aapcs64.s", true)),
         ("powerpc",    _,        _,         _) => Some(("src/arch/powerpc32.s", true)),
         ("powerpc64",  "little", _,         _) => Some(("src/arch/powerpc64_openpower.s", true)),
@@ -23,7 +20,9 @@ fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'sta
         ("mips",       _,        _,         _) => Some(("src/arch/mips_eabi.s", true)),
         ("mips64",     _,        _,         _) => Some(("src/arch/mips64_eabi.s", true)),
         ("sparc64",    _,        _,         _) => Some(("src/arch/sparc64.s", true)),
-        ("sparc",    _,          _,         _) => Some(("src/arch/sparc_sysv.s", true)),
+        ("sparc",      _,        _,         _) => Some(("src/arch/sparc_sysv.s", true)),
+        ("riscv32",    _,        _,         _) => Some(("src/arch/riscv.s", true)),
+        ("riscv64",    _,        _,         _) => Some(("src/arch/riscv64.s", true)),
         _ => None,
     }
 }

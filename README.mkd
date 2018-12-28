@@ -149,9 +149,6 @@ aarch64-apple-ios has not been tested. iOS hardware is necessary to run these te
 </tr>
 <tr>
 <td colspan="3">
-
-Will probably compile, and work if fuchsia uses AAPCS calling convention.
-
 </td>
 </tr>
 <tr>
@@ -177,9 +174,6 @@ alternative use [Fibers][fibers].
 </tr>
 <tr>
 <td colspan="3">
-
-Only targets using the standard AAPCS calling convention are supported currently.
-
 </td>
 </tr>
 
@@ -221,9 +215,6 @@ alternative use [Fibers][fibers].
 </tr>
 <tr>
 <td colspan="3">
-
-Only targets using the standard AAPCS calling convention are supported currently.
-
 </td>
 </tr>
 
@@ -248,9 +239,6 @@ Only targets using the standard AAPCS calling convention are supported currently
 </tr>
 <tr>
 <td colspan="3">
-
-Only targets using the standard AAPCS calling convention are supported currently.
-
 </td>
 </tr>
 

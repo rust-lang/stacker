@@ -34,6 +34,7 @@ macro_rules! extern_item {
         extern "sysv64" $($toks)+
     };
 }
+
 #[cfg(target_arch = "x86")]
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
@@ -41,6 +42,16 @@ macro_rules! extern_item {
     };
     ($($toks: tt)+) => {
         extern "fastcall" $($toks)+
+    };
+}
+
+#[cfg(any(target_arch = "arm", target_arch="aarch64"))]
+macro_rules! extern_item {
+    (unsafe $($toks: tt)+) => {
+        unsafe extern "aapcs" $($toks)+
+    };
+    ($($toks: tt)+) => {
+        extern "aapcs" $($toks)+
     };
 }
 
