@@ -217,7 +217,7 @@ alternative use [Fibers][fibers].
 <td rowspan="2">&#42;</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Unknown</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">

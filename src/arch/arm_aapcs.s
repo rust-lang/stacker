@@ -89,10 +89,15 @@ FUNCTION(rust_psm_on_stack):
 FNSTART
 .cfi_startproc
     push {r4, lr}
+    .cfi_def_cfa_offset 8
     mov r4, sp
+    .cfi_def_cfa_register r4
+    .cfi_offset lr, -4
+    .cfi_offset r4, -8
     mov sp, r3
     blx r2
     mov sp, r4
+    .cfi_restore sp
     pop {r4, pc}
 .rust_psm_on_stack_end:
 SIZE(rust_psm_on_stack,.rust_psm_on_stack_end)
