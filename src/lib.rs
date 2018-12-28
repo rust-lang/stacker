@@ -1,13 +1,14 @@
 //! # **P**ortable **S**tack **M**anipulator
 //!
-//! This crate provides very portable functions to control the stack pointer and inspect the
-//! properties of the stack. This crate does not attempt to provide safe abstractions to any
-//! operations, the only goals are correctness, portability and efficiency (in that exact order).
-//! As a consequence most functions you’ll see in this crate are unsafe.
+//! This crate provides portable functions to control the stack pointer and inspect the properties
+//! of the stack. This crate does not attempt to provide safe abstractions to any operations, the
+//! only goals are correctness, portability and efficiency (in that exact order).  As a consequence
+//! most functions you’ll see in this crate are unsafe.
 //!
-//! Unless you’re writing a safe abstraction over stack manipulation, this is not the crate you
-//! want. Instead consider one of the safe abstractions over this crate. A good place to look at is
-//! the crates.io’s reverse dependency list.
+//! Note, that the stack allocation is left up to the user. Unless you’re writing a safe
+//! abstraction over stack manipulation, this is not the crate you want. Instead consider one of
+//! the safe abstractions over this crate. A good place to look at is the crates.io’s reverse
+//! dependency list.
 // TODO: insert a link to stacker once it is moved on top of this crate.
 
 #![allow(unused_macros)]
@@ -53,19 +54,20 @@ extern_item! { {
                          callback: extern_item!(unsafe fn(usize, usize)), sp: *mut u8);
 } }
 
-/// Run the provided code with the provided stack. Once the function execution is complete,
-/// the original stack pointer is restored.
+/// Run the closure on the provided stack.
+///
+/// Once the closure completes its execution, the original stack pointer is restored and execution
+/// returns to the caller.
 ///
 /// `base` address must be the low address of the stack memory region, regardless of the stack
 /// growth direction. It is not necessary for the whole region `[base; base + size]` to be usable
 /// at the time this function called, however it is required that at least the following hold:
 ///
-/// * Both `base` and `base + size` are aligned up to the platform-specific requirements (see
-///   `required_stack_alignment`);
-/// * Depending on `StackDirection` applicable to the target, one end of the memory region contains
-///   a guard page (not writable, readable or executable). The other end must have sufficient
-///   amount of read-write memory to be used as stack by the provided `callback` until more pages
-///   are commited.
+/// * Both `base` and `base + size` are aligned up to the target-specific requirements;
+/// * Depending on `StackDirection` value for the platform, the end of the stack memory region,
+///   which would end up containing the first frame(s), must have sufficient number of pages
+///   allocated to execute code until more pages are commited. The other end should contain a guard
+///   page (not writable, readable or executable) to ensure Rust’s soundness guarantees.
 ///
 /// Note, that some or all of these considerations are irrelevant to some applications. For
 /// example, Rust’s soundness story relies on all stacks having a guard-page, however if the user
@@ -75,17 +77,41 @@ extern_item! { {
 /// The previous stack may not be deallocated. If an ability to deallocate the old stack is desired
 /// consider `replace_stack` instead.
 ///
+/// # Guidelines
+///
+/// Memory regions that are aligned to a single page (usually 4kB) are an extremely portable choice
+/// for stacks.
+///
+/// Allocate at least 4kB of stack. Some architectures (such as SPARC) consume stack memory
+/// significantly faster compared to the more usual architectures such as x86 or ARM. Allocating
+/// less than 4kB of memory may make it impossible to commit more pages without overflowing the
+/// stack later on.
+///
 /// # Unsafety
 ///
-/// The stack base address must be aligned as appropriate for the platform.
+/// The stack `base` address must be aligned as appropriate for the target.
 ///
-/// The stack size must be a multiple of stack alignment required by platform.
+/// The stack `size` must be a multiple of stack alignment required by target.
+///
+/// The `size` must not overflow `isize`.
 ///
 /// `callback` must not unwind or return control flow by any other means than directly returning.
 ///
 /// # Examples
 ///
-/// TODO
+/// ```
+/// use std::alloc;
+/// const STACK_ALIGN: usize = 4096;
+/// const STACK_SIZE: usize = 4096;
+///
+/// let layout = alloc::Layout::from_size_align(STACK_SIZE, STACK_ALIGN).unwrap();
+/// let new_stack = alloc::alloc(layout);
+/// assert!(!new_stack.is_null(), "allocations must succeed!");
+/// let (stack, result) = psm::on_stack(new_stack, STACK_SIZE, || {
+///     (psm::stack_pointer(), 4 + 4)
+/// });
+/// println!("4 + 4 = {} has been calculated on stack {:p}", result, stack);
+/// ```
 #[cfg(switchable_stack)]
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
     extern_item!{ unsafe fn with_on_stack<R, F: FnOnce() -> R>(d: usize, return_ptr: usize) {
@@ -106,21 +132,17 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
     return return_value;
 }
 
-/// Replace the provided non-terminating computation on an entirely new stack.
-///
-/// On platforms where multiple stack pointers are available, the “current” stack pointer is
-/// replaced.
+/// Run the provided non-terminating computation on an entirely new stack.
 ///
 /// `base` address must be the low address of the stack memory region, regardless of the stack
 /// growth direction. It is not necessary for the whole region `[base; base + size]` to be usable
 /// at the time this function called, however it is required that at least the following hold:
 ///
-/// * Both `base` and `base + size` are aligned up to the platform-specific requirements (see
-///   `required_stack_alignment`);
-/// * Depending on `StackDirection` applicable to the target, one end of the memory region contains
-///   a guard page (not writable, readable or executable). The other end must have sufficient
-///   amount of read-write memory to be used as stack by the provided `callback` until more pages
-///   are commited.
+/// * Both `base` and `base + size` are aligned up to the target-specific requirements;
+/// * Depending on `StackDirection` value for the platform, the end of the stack memory region,
+///   which would end up containing the first frame(s), must have sufficient number of pages
+///   allocated to execute code until more pages are commited. The other end should contain a guard
+///   page (not writable, readable or executable) to ensure Rust’s soundness guarantees.
 ///
 /// Note, that some or all of these considerations are irrelevant to some applications. For
 /// example, Rust’s soundness story relies on all stacks having a guard-page, however if the user
@@ -130,11 +152,24 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
 /// The previous stack is not deallocated and may not be deallocated unless the data on the old
 /// stack is not referenced in any way (by e.g. the `callback` closure).
 ///
+/// On platforms where multiple stack pointers are available, the “current” stack pointer is
+/// replaced.
+///
+/// # Guidelines
+///
+/// Memory regions that are aligned to a single page (usually 4kB) are an extremely portable choice
+/// for stacks.
+///
+/// Allocate at least 4kB of stack. Some architectures (such as SPARC) consume stack memory
+/// significantly faster compared to the more usual architectures such as x86 or ARM. Allocating
+/// less than 4kB of memory may make it impossible to commit more pages without overflowing the
+/// stack later on.
+///
 /// # Unsafety
 ///
-/// The stack base address must be aligned as appropriate for the platform.
+/// The stack `base` address must be aligned as appropriate for the target.
 ///
-/// The stack `size` must be a multiple of stack alignment required by platform.
+/// The stack `size` must be a multiple of stack alignment required by target.
 ///
 /// The `size` must not overflow `isize`.
 ///
@@ -167,6 +202,7 @@ pub enum StackDirection {
 
 impl StackDirection {
     /// Obtain the stack growth direction.
+    #[inline(always)]
     pub fn new() -> StackDirection {
         const ASC: u8 = StackDirection::Ascending as u8;
         const DSC: u8 = StackDirection::Descending as u8;
@@ -182,6 +218,25 @@ impl StackDirection {
     }
 }
 
+/// Returns current stack pointer.
+///
+/// Note, that the stack pointer returned is from the perspective of the caller. From the
+/// perspective of `stack_pointer` function the pointer returned is the frame pointer.
+///
+/// While it is a goal to minimize the amount of stack used by this function, implementations for
+/// some targets may be unable to avoid allocating a stack frame. This makes this function
+/// suitable for stack exhaustion detection only in conjunction with sufficient padding.
+///
+/// Using `stack_pointer` to check for stack exhaustion is tricky to get right. It is impossible to
+/// know the callee’s frame size, therefore such value must be derived some other way. A common
+/// approach is to use stack padding (reserve enough stack space for any function to be called) and
+/// check against the padded threshold. If padding is chosen incorrectly, a situation similar to
+/// one described below may occur:
+///
+/// 1. For stack exhaustion check, remaining stack is checked against `stack_pointer` with the
+///    padding applied;
+/// 2. Callee allocates more stack than was accounted for with padding, and accesses pages outside
+///    the stack, crashing the program.
 #[inline(always)]
 pub fn stack_pointer() -> *mut u8 {
     unsafe {
