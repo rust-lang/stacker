@@ -45,10 +45,12 @@ macro_rules! extern_item {
 
 extern_item! { {
     fn rust_psm_stack_direction() -> u8;
+    fn rust_psm_stack_pointer() -> *mut u8;
+    #[cfg(switchable_stack)]
     fn rust_psm_replace_stack(data: usize, callback: extern_item!(unsafe fn(usize) -> !), sp: *mut u8) -> !;
+    #[cfg(switchable_stack)]
     fn rust_psm_on_stack(data: usize, return_ptr: usize,
                          callback: extern_item!(unsafe fn(usize, usize)), sp: *mut u8);
-    fn rust_psm_stack_pointer() -> *mut u8;
 } }
 
 /// Run the provided code with the provided stack. Once the function execution is complete,
@@ -84,6 +86,7 @@ extern_item! { {
 /// # Examples
 ///
 /// TODO
+#[cfg(switchable_stack)]
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
     extern_item!{ unsafe fn with_on_stack<R, F: FnOnce() -> R>(d: usize, return_ptr: usize) {
         // Safe to move out from `F`, because closure in is forgotten in `on_stack` and dropping
@@ -137,6 +140,7 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
 ///
 /// `callback` must not return (not enforced by typesystem currently because `!` is unstable),
 /// unwind or otherwise return control flow to any of the previous frames.
+#[cfg(switchable_stack)]
 pub unsafe fn replace_stack<F: FnOnce()>(base: *mut u8, size: usize, callback: F) -> ! {
     extern_item! { unsafe fn with_replaced_stack<F: FnOnce()>(d: usize) -> ! {
         // Safe to move out, because the closure is essentially forgotten by
