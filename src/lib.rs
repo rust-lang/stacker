@@ -103,14 +103,15 @@ extern_item! { {
 /// use std::alloc;
 /// const STACK_ALIGN: usize = 4096;
 /// const STACK_SIZE: usize = 4096;
-///
-/// let layout = alloc::Layout::from_size_align(STACK_SIZE, STACK_ALIGN).unwrap();
-/// let new_stack = alloc::alloc(layout);
-/// assert!(!new_stack.is_null(), "allocations must succeed!");
-/// let (stack, result) = psm::on_stack(new_stack, STACK_SIZE, || {
-///     (psm::stack_pointer(), 4 + 4)
-/// });
-/// println!("4 + 4 = {} has been calculated on stack {:p}", result, stack);
+/// unsafe {
+///     let layout = alloc::Layout::from_size_align(STACK_SIZE, STACK_ALIGN).unwrap();
+///     let new_stack = alloc::alloc(layout);
+///     assert!(!new_stack.is_null(), "allocations must succeed!");
+///     let (stack, result) = psm::on_stack(new_stack, STACK_SIZE, || {
+///         (psm::stack_pointer(), 4 + 4)
+///     });
+///     println!("4 + 4 = {} has been calculated on stack {:p}", result, stack);
+/// }
 /// ```
 #[cfg(switchable_stack)]
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
