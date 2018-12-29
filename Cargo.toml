@@ -1,13 +1,13 @@
 [package]
 name = "psm"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Simonas Kazlauskas <git@kazlauskas.me>"]
 build = "build.rs"
 description = "Portable Stack Manipulator: stack manipulation and introspection routines"
 keywords = ["stack", "no_std"]
 license = "ISC/Apache-2.0"
 repository = "https://github.com/nagisa/psm/"
-documentation = "https://docs.rs/psm/0.1.1"
+documentation = "https://docs.rs/psm/0.1.2"
 
 [dependencies]
 
