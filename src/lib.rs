@@ -29,6 +29,8 @@ extern crate cfg_if;
 extern crate libc;
 #[cfg(windows)]
 extern crate winapi;
+#[macro_use]
+extern crate psm;
 
 use std::cell::Cell;
 
@@ -47,9 +49,6 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(
     stack_size: usize,
     f: F,
 ) -> R {
-    if cfg!(unsupported) {
-        return f();
-    }
     // if we can't guess the remaining stack (unsupported on some platforms)
     // we immediately grow the stack and then cache the new stack size (which
     // we do know now because we know by how much we grew the stack)
@@ -60,18 +59,26 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(
     }
 }
 
-extern {
-    fn __stacker_stack_pointer() -> usize;
-}
-
 /// Queries the amount of remaining stack as interpreted by this library.
 ///
 /// This function will return the amount of stack space left which will be used
 /// to determine whether a stack switch should be made or not.
-#[inline(always)]
-pub fn remaining_stack() -> Option<usize> {
-    get_stack_limit().map(|limit| unsafe { __stacker_stack_pointer() - limit })
-}
+psm_stack_information! (
+    yes {
+        #[inline(always)]
+        pub fn remaining_stack() -> Option<usize> {
+            get_stack_limit().map(|limit| psm::stack_pointer() as usize - limit)
+        }
+    }
+    no {
+        #[inline(never)]
+        pub fn remaining_stack() -> Option<usize> {
+            let x = 0;
+            // FIXME: this *feels* slightly dangerous?
+            get_stack_limit().map(|limit| &x as *const _ as usize - limit)
+        }
+    }
+);
 
 /// Always creates a new stack for the passed closure to run on.
 /// The closure will still be on the same thread as the caller of `grow`.
@@ -97,82 +104,34 @@ fn get_stack_limit() -> Option<usize> {
     STACK_LIMIT.with(|s| s.get())
 }
 
-#[cfg(not(unsupported))]
+#[inline(always)]
 fn set_stack_limit(l: Option<usize>) {
     STACK_LIMIT.with(|s| s.set(l))
 }
 
-cfg_if! {
-    if #[cfg(unsupported)] {
+psm_stack_manipulation! {
+    yes {
+        #[cfg(not(windows))]
         fn _grow(stack_size: usize, f: &mut FnMut()) {
-            drop(stack_size);
-            f();
-        }
-    } else if #[cfg(all(target_arch = "wasm32", target_os = "unknown"))] {
-        extern "C" {
-            fn __stacker_switch_stacks(
-                new_stack: usize,
-                fnptr: *const u8,
-                dataptr: *mut u8
-            );
-        }
+            use std::panic::{self, AssertUnwindSafe};
 
-        fn _grow(stack_size: usize, mut f: &mut FnMut()) {        
-            // Keep the stack 4 bytes aligned.
-            let stack_size = (stack_size + 3) / 4 * 4;
-
-            // Allocate some new stack for oureslves
-            let mut stack = Vec::<u8>::with_capacity(stack_size);
-            let new_limit = stack.as_ptr() as usize + 32 * 1024;
-
-            // Save off the old stack limits
-            let old_limit = get_stack_limit();
-
-            // Prepare stack limits for the stack switch
-            set_stack_limit(Some(new_limit));
-
-            unsafe {
-                __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
-                                        doit as usize as *const _,
-                                        &mut f as *mut &mut FnMut() as *mut u8);
+            struct StackSwitch {
+                map: *mut libc::c_void,
+                stack_size: usize,
+                old_stack_limit: Option<usize>,
             }
 
-            // Once we've returned reset bothe stack limits and then return value same
-            // value the closure returned.
-            set_stack_limit(old_limit);
-
-            unsafe extern fn doit(f: &mut &mut FnMut()) {
-                f();
-            }
-        }
-    } else if #[cfg(not(windows))] {
-        use std::any::Any;
-        use std::panic::{self, AssertUnwindSafe};
-
-        extern {
-            fn __stacker_switch_stacks(dataptr: *mut u8,
-                                       fnptr: *const u8,
-                                       new_stack: usize);
-            fn getpagesize() -> libc::c_int;
-        }
-
-        struct StackSwitch {
-            map: *mut libc::c_void,
-            stack_size: usize,
-            old_stack_limit: Option<usize>,
-        }
-
-        impl Drop for StackSwitch {
-            fn drop(&mut self) {
-                unsafe {
-                    libc::munmap(self.map, self.stack_size);
+            impl Drop for StackSwitch {
+                fn drop(&mut self) {
+                    unsafe {
+                        libc::munmap(self.map, self.stack_size);
+                    }
+                    set_stack_limit(self.old_stack_limit);
                 }
-                set_stack_limit(self.old_stack_limit);
             }
-        }
 
-        fn _grow(stack_size: usize, f: &mut FnMut()) {
-            let page_size = unsafe { getpagesize() } as usize;
+            // FIXME: consider caching it?
+            let page_size = unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) } as usize;
 
             // Round the stack size up to a multiple of page_size
             let rem = stack_size % page_size;
@@ -203,7 +162,7 @@ cfg_if! {
             if map == -1isize as _ {
                 panic!("unable to allocate stack")
             }
-            let _switch = StackSwitch {
+            let switch = StackSwitch {
                 map,
                 stack_size,
                 old_stack_limit: get_stack_limit(),
@@ -216,46 +175,69 @@ cfg_if! {
             if result == -1 {
                 panic!("unable to set stack permissions")
             }
+
             let stack_low = map as usize;
 
             // Prepare stack limits for the stack switch
             set_stack_limit(Some(stack_low));
 
-            // Make sure the stack is 16-byte aligned which should be enough for all
-            // platforms right now. Allocations on 64-bit are already 16-byte aligned
-            // and our switching routine doesn't push any other data, but the routine on
-            // 32-bit pushes an argument so we need a bit of an offset to get it 16-byte
-            // aligned when the call is made.
-            let offset = if cfg!(target_pointer_width = "32") {
-                12
-            } else {
-                0
-            };
-
-            struct Context<'a> {
-                closure: &'a mut FnMut(),
-                panic: Option<Box<Any+Send>>,
-            }
-
-            extern fn doit(cx: &mut Context) {
-                let closure = AssertUnwindSafe(&mut cx.closure);
-                cx.panic = panic::catch_unwind(closure).err();
-            }
-
             unsafe {
-                let mut cx = Context {
-                    closure: f,
-                    panic: None,
-                };
-                __stacker_switch_stacks(&mut cx as *mut Context as *mut u8,
-                                        doit as usize as *const _,
-                                        stack_low + stack_size - offset);
-                if let Some(panic) = cx.panic.take() {
-                    panic::resume_unwind(panic);
+                if let Some(p) = psm::on_stack(map as *mut _, stack_size, move || {
+                    panic::catch_unwind(AssertUnwindSafe(f)).err()
+                }) {
+                    panic::resume_unwind(p);
                 }
             }
 
             // Dropping `switch` frees the memory mapping and restores the old stack limit
+            drop(switch);
+        }
+    }
+    no {
+        #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+        fn _grow(stack_size: usize, mut f: &mut FnMut()) {
+            extern "C" {
+                fn __stacker_switch_stacks(
+                    new_stack: usize,
+                    fnptr: *const u8,
+                    dataptr: *mut u8
+                );
+            }
+
+
+            // Keep the stack 4 bytes aligned.
+            let stack_size = (stack_size + 3) / 4 * 4;
+
+            // Allocate some new stack for oureslves
+            let mut stack = Vec::<u8>::with_capacity(stack_size);
+            let new_limit = stack.as_ptr() as usize + 32 * 1024;
+
+            // Save off the old stack limits
+            let old_limit = get_stack_limit();
+
+            // Prepare stack limits for the stack switch
+            set_stack_limit(Some(new_limit));
+
+            unsafe {
+                __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
+                                        doit as usize as *const _,
+                                        &mut f as *mut &mut FnMut() as *mut u8);
+            }
+
+            // Once we've returned reset bothe stack limits and then return value same
+            // value the closure returned.
+            set_stack_limit(old_limit);
+
+            unsafe extern fn doit(f: &mut &mut FnMut()) {
+                f();
+            }
+        }
+
+
+        #[cfg(not(any(windows, all(target_arch = "wasm32", target_os = "unknown"))))]
+        fn _grow(stack_size: usize, f: &mut FnMut()) {
+            drop(stack_size);
+            f();
         }
     }
 }
@@ -395,7 +377,7 @@ cfg_if! {
             // Query the allocation which contains our stack pointer in order
             // to discover the size of the stack
             VirtualQuery(
-                __stacker_stack_pointer() as *const _,
+                psm::stack_pointer() as *const _,
                 &mut mi,
                 std::mem::size_of_val(&mi) as SIZE_T,
             );

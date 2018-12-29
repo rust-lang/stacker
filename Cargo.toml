@@ -21,6 +21,7 @@ test = false
 [dependencies]
 cfg-if = "0.1.6"
 libc = "0.2.45"
+psm = "0.1.2"
 
 [target.'cfg(windows)'.dependencies.winapi]
 version = "0.3.6"
