@@ -32,16 +32,16 @@ fn main() {
     let env = ::std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
     let os = ::std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let endian = ::std::env::var("CARGO_CFG_TARGET_ENDIAN").unwrap();
-    let (asm, canswitch) = if let Some(val) = find_assembly(&arch, &endian, &os, &env) {
-        val
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env) {
+        println!("cargo:rustc-cfg=asm");
+        if canswitch {
+            println!("cargo:rustc-cfg=switchable_stack")
+        }
+        asm
     } else {
-        eprintln!("Target {}-{}-{} is not supported", arch, os, env);
-        ::std::process::abort();
+        println!("cargo:warning=Target {}-{}-{} has no assembly files!", arch, os, env);
+        return;
     };
-
-    if canswitch {
-        println!("cargo:rustc-cfg=switchable_stack")
-    }
 
     let mut cfg = cc::Build::new();
     let msvc = cfg.get_compiler().is_like_msvc();

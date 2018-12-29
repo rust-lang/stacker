@@ -56,7 +56,9 @@ macro_rules! extern_item {
 }
 
 extern_item! { {
+    #[cfg(asm)]
     fn rust_psm_stack_direction() -> u8;
+    #[cfg(asm)]
     fn rust_psm_stack_pointer() -> *mut u8;
     #[cfg(switchable_stack)]
     fn rust_psm_replace_stack(data: usize, callback: extern_item!(unsafe fn(usize) -> !), sp: *mut u8) -> !;
@@ -215,6 +217,7 @@ pub enum StackDirection {
 impl StackDirection {
     /// Obtain the stack growth direction.
     #[inline(always)]
+    #[cfg(asm)]
     pub fn new() -> StackDirection {
         const ASC: u8 = StackDirection::Ascending as u8;
         const DSC: u8 = StackDirection::Descending as u8;
@@ -250,8 +253,39 @@ impl StackDirection {
 /// 2. Callee allocates more stack than was accounted for with padding, and accesses pages outside
 ///    the stack, crashing the program.
 #[inline(always)]
+#[cfg(asm)]
 pub fn stack_pointer() -> *mut u8 {
     unsafe {
         rust_psm_stack_pointer()
     }
+}
+
+/// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.
+#[cfg(switchable_stack)]
+#[macro_export]
+macro_rules! psm_stack_manipulation {
+    (yes { $($yes: tt)* } no { $($no: tt)* }) => { $($yes)* };
+}
+
+/// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.
+#[cfg(not(switchable_stack))]
+#[macro_export]
+macro_rules! psm_stack_manipulation {
+    (yes { $($yes: tt)* } no { $($no: tt)* }) => { $($no)* };
+}
+
+/// Macro that outputs its tokens only if `psm::stack_pointer` and `psm::StackDirection::new` are
+/// available.
+#[cfg(asm)]
+#[macro_export]
+macro_rules! psm_stack_information {
+    (yes { $($yes: tt)* } no { $($no: tt)* }) => { $($yes)* };
+}
+
+/// Macro that outputs its tokens only if `psm::stack_pointer` and `psm::StackDirection::new` are
+/// available.
+#[cfg(not(asm))]
+#[macro_export]
+macro_rules! psm_stack_information {
+    (yes { $($yes: tt)* } no { $($no: tt)* }) => { $($no)* };
 }
