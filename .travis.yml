@@ -20,9 +20,6 @@ matrix:
     # - env: TARGET=i686-linux-android
     - env: TARGET=x86_64-linux-android
 
-    # iOS
-    # None of these seem to work?
-
     # Linux
     - env: TARGET=aarch64-unknown-linux-gnu
     - env: TARGET=arm-unknown-linux-gnueabi

@@ -2,10 +2,10 @@ extern crate cc;
 
 fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'static str, bool)> {
     match (arch, endian, os, env) {
-        ("x86",        _,        "windows", "msvc") => Some(("src/arch/x86_msvc.s", false)),
-        ("x86_64",     _,        "windows", "msvc") => Some(("src/arch/x86_64_msvc.s", false)),
-        ("arm",        _,        "windows", "msvc") => Some(("src/arch/arm_armasm.s", false)),
-        ("aarch64",    _,        "windows", "msvc") => Some(("src/arch/aarch64_armasm.s", false)),
+        ("x86",        _,        "windows", "msvc") => Some(("src/arch/x86_msvc.asm", false)),
+        ("x86_64",     _,        "windows", "msvc") => Some(("src/arch/x86_64_msvc.asm", false)),
+        ("arm",        _,        "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
+        ("aarch64",    _,        "windows", "msvc") => Some(("src/arch/aarch64_armasm.asm", false)),
         ("x86",        _,        "windows", _)      => Some(("src/arch/x86.s", false)),
         ("x86_64",     _,        "windows", _)      => Some(("src/arch/x86_64.s", false)),
 
