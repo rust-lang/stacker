@@ -15,3 +15,5 @@ build: off
 test_script:
 - cargo build
 - cargo build --release
+- cargo run --example info
+- cargo run --release --example info
