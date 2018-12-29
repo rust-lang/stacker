@@ -13,5 +13,5 @@ install:
 build: off
 
 test_script:
-- cargo build -- --nocapture --test-threads=1
-- cargo build --release -- --nocapture --test-threads=1
+- cargo build
+- cargo build --release
