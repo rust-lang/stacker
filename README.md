@@ -1,6 +1,6 @@
 # stacker
 
-[![Build Status](https://travis-ci.org/alexcrichton/stacker.svg?branch=master)](https://travis-ci.org/alexcrichton/stacker)
+[![Build Status](https://travis-ci.com/alexcrichton/stacker.svg?branch=master)](https://travis-ci.com/alexcrichton/stacker)
 [![Build status](https://ci.appveyor.com/api/projects/status/1yca9gp2bhe9h2by?svg=true)](https://ci.appveyor.com/project/alexcrichton/stacker)
 
 [Documentation](https://docs.rs/stacker)
