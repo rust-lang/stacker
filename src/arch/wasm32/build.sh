@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# See the README.md for more info.
+
 set -eux
 
 clang -c --target=wasm32 black_box.s stack_pointer.s switch_stacks.s
