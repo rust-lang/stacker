@@ -118,7 +118,7 @@ cfg_if! {
         }
 
         fn _grow(stack_size: usize, mut f: &mut FnMut()) {        
-            // Keep stack 4 bytes aligned.
+            // Keep the stack 4 bytes aligned.
             let stack_size = (stack_size + 3) / 4 * 4;
 
             // Allocate some new stack for oureslves
@@ -415,6 +415,11 @@ cfg_if! {
                                                    &mut stacksize), 0);
             assert_eq!(libc::pthread_attr_destroy(&mut attr), 0);
             Some(stackaddr as usize)
+        }
+    } else if #[cfg(all(target_arch = "wasm32", target_os = "unknown"))] {
+        #[inline(always)]
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            Some(__stacker_stack_pointer())
         }
     } else if #[cfg(target_os = "macos")] {
         unsafe fn guess_os_stack_limit() -> Option<usize> {
