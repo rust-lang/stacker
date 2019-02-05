@@ -54,17 +54,12 @@ Target has been tested locally.
 </tr>
 <tr>
 <td rowspan="2">windows</td>
-<td>No</td>
-<td>No</td>
-<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td colspan="3">
-
-Stacks allocated the usual way are not valid to be used on Windows and the functions to allocate a
-stack in a proper way is a Windows implementation detail. As a (unnecessarily slow and inflexible)
-alternative use [Fibers][fibers].
-
 </td>
 </tr>
 <tr>
@@ -109,6 +104,9 @@ The assembly files are available, but the target hasn’t been verified to build
 </tr>
 <tr>
 <td colspan="3">
+
+The code technically works on my local machine, but exception handling does not correctly work on
+appveyor, which makes me unwilling to mark this as working yet.
 
 Stacks allocated the usual way are not valid to be used on Windows and the functions to allocate a
 stack in a proper way is a Windows implementation detail. As a (unnecessarily slow and inflexible)
