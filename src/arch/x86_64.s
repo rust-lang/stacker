@@ -5,34 +5,12 @@
 
 #if CFG_TARGET_OS_darwin || CFG_TARGET_OS_macos || CFG_TARGET_OS_ios
 
-#define COFFDEF(fnname)
-#define COFFSCL(sclN)
-#define COFFTYPE(typeN)
-#define COFFENDEF
-
 #define GLOBL(fnname) .globl _##fnname
 #define TYPE(fnname)
 #define FUNCTION(fnname) _##fnname
 #define SIZE(fnname,endlabel)
 
-#elif CFG_TARGET_OS_windows
-
-#define COFFDEF(fnname) .def fnname
-#define COFFSCL(sclN) .scl sclN
-#define COFFTYPE(typeN) .type typeN
-#define COFFENDEF .endef
-
-#define GLOBL(fnname) .globl fnname
-#define TYPE(fnname)
-#define FUNCTION(fnname) fnname
-#define SIZE(fnname,endlabel)
-
 #else
-
-#define COFFDEF(fnname)
-#define COFFSCL(sclN)
-#define COFFTYPE(typeN)
-#define COFFENDEF
 
 #define GLOBL(fnname) .globl fnname
 #define TYPE(fnname) .type fnname,@function
@@ -41,10 +19,7 @@
 
 #endif
 
-COFFDEF(rust_psm_stack_direction)
-COFFSCL(2)
-COFFTYPE(32)
-COFFENDEF
+
 GLOBL(rust_psm_stack_direction)
 .p2align 4
 TYPE(rust_psm_stack_direction)
@@ -58,10 +33,6 @@ SIZE(rust_psm_stack_direction,.rust_psm_stack_direction_end)
 .cfi_endproc
 
 
-COFFDEF(rust_psm_stack_pointer)
-COFFSCL(2)
-COFFTYPE(32)
-COFFENDEF
 GLOBL(rust_psm_stack_pointer)
 .p2align 4
 TYPE(rust_psm_stack_pointer)
@@ -75,10 +46,6 @@ SIZE(rust_psm_stack_pointer,.rust_psm_stack_pointer_end)
 .cfi_endproc
 
 
-COFFDEF(rust_psm_replace_stack)
-COFFSCL(2)
-COFFTYPE(32)
-COFFENDEF
 GLOBL(rust_psm_replace_stack)
 .p2align 4
 TYPE(rust_psm_replace_stack)
@@ -98,10 +65,6 @@ SIZE(rust_psm_replace_stack,.rust_psm_replace_stack_end)
 .cfi_endproc
 
 
-COFFDEF(rust_psm_on_stack)
-COFFSCL(2)
-COFFTYPE(32)
-COFFENDEF
 GLOBL(rust_psm_on_stack)
 .p2align 4
 TYPE(rust_psm_on_stack)

@@ -2,7 +2,7 @@ extern crate psm;
 
 use std::{alloc, panic};
 
-const CHAIN_DEPTH: usize = 64;
+const CHAIN_DEPTH: usize = 16;
 const STACK_ALIGN: usize = 4096;
 // Generating backraces (because of RUST_BACKTRACE) create a few quite large frames, so it is
 // important, that all frames have sufficient amount of available memory to not run over the
