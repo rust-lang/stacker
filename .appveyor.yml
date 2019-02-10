@@ -1,3 +1,5 @@
+image:
+  - Visual Studio 2017
 environment:
   matrix:
   - TARGET: x86_64-pc-windows-msvc
@@ -20,6 +22,12 @@ build: false
 test_script:
   - cargo test --target %TARGET%
   - cargo test --release --target %TARGET%
+  - cd psm
+  - cargo test --target %TARGET% -- --nocapture --test-threads=1
+  - cargo test --target %TARGET% --release -- --nocapture --test-threads=1
+  - cargo test --target %TARGET% --examples -- --nocapture --test-threads=1
+  - cargo test --target %TARGET% --examples --release -- --nocapture --test-threads=1
+
 
 branches:
   only:
