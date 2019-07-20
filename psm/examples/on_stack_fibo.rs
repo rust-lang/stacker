@@ -1,8 +1,8 @@
 extern crate psm;
-use std::alloc;
 
 psm::psm_stack_manipulation! {
     yes {
+        use std::alloc;
 
         #[inline(never)]
         fn fib(n: usize, stack_limit: *mut u8) -> Option<u64> {

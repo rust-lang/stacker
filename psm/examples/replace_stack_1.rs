@@ -1,9 +1,9 @@
 extern crate psm;
-use std::alloc;
-
 
 psm::psm_stack_manipulation! {
     yes {
+        use std::alloc;
+
         const STACK_SIZE: usize = 4096 * 64;
         const STACK_ALIGN: usize = 4096;
 
