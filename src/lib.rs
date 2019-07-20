@@ -59,18 +59,22 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(
     }
 }
 
-/// Queries the amount of remaining stack as interpreted by this library.
-///
-/// This function will return the amount of stack space left which will be used
-/// to determine whether a stack switch should be made or not.
 psm_stack_information! (
     yes {
+        /// Queries the amount of remaining stack as interpreted by this library.
+        ///
+        /// This function will return the amount of stack space left which will be used
+        /// to determine whether a stack switch should be made or not.
         #[inline(always)]
         pub fn remaining_stack() -> Option<usize> {
             get_stack_limit().map(|limit| psm::stack_pointer() as usize - limit)
         }
     }
     no {
+        /// Queries the amount of remaining stack as interpreted by this library.
+        ///
+        /// This function will return the amount of stack space left which will be used
+        /// to determine whether a stack switch should be made or not.
         #[inline(never)]
         pub fn remaining_stack() -> Option<usize> {
             let x = 0;
