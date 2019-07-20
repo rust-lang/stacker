@@ -401,6 +401,9 @@ cfg_if! {
     } else if #[cfg(all(target_arch = "wasm32", target_os = "unknown"))] {
         #[inline(always)]
         unsafe fn guess_os_stack_limit() -> Option<usize> {
+            extern "C" {
+                fn __stacker_stack_pointer() -> usize;
+            }
             Some(__stacker_stack_pointer())
         }
     } else if #[cfg(target_os = "macos")] {
