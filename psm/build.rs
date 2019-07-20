@@ -2,12 +2,16 @@ extern crate cc;
 
 fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'static str, bool)> {
     match (arch, endian, os, env) {
+        // The implementations for stack switching exist, but, officially, doing so without Fibers
+        // is not supported in Windows. For x86_64 the implementation actually works locally,
+        // but failed tests in CI (???). Might want to have a feature for experimental support
+        // here.
         ("x86",        _,        "windows", "msvc") => Some(("src/arch/x86_msvc.asm", false)),
-        ("x86_64",     _,        "windows", "msvc") => Some(("src/arch/x86_64_msvc.asm", true)),
+        ("x86_64",     _,        "windows", "msvc") => Some(("src/arch/x86_64_msvc.asm", false)),
         ("arm",        _,        "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
         ("aarch64",    _,        "windows", "msvc") => Some(("src/arch/aarch64_armasm.asm", false)),
         ("x86",        _,        "windows", _)      => Some(("src/arch/x86_windows_gnu.s", false)),
-        ("x86_64",     _,        "windows", _)      => Some(("src/arch/x86_64_windows_gnu.s", true)),
+        ("x86_64",     _,        "windows", _)      => Some(("src/arch/x86_64_windows_gnu.s", false)),
 
         ("x86",        _,        _,         _) => Some(("src/arch/x86.s", true)),
         ("x86_64",     _,        _,         _) => Some(("src/arch/x86_64.s", true)),
