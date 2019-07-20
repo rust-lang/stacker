@@ -2,33 +2,41 @@ extern crate psm;
 
 use std::{alloc, panic};
 
-const CHAIN_DEPTH: usize = 16;
-const STACK_ALIGN: usize = 4096;
-// Generating backraces (because of RUST_BACKTRACE) create a few quite large frames, so it is
-// important, that all frames have sufficient amount of available memory to not run over the
-// stack...
-const FRAME_SIZE: usize = 4096 * 10;
+psm::psm_stack_manipulation! {
+    yes {
+        const CHAIN_DEPTH: usize = 16;
+        const STACK_ALIGN: usize = 4096;
+        // Generating backraces (because of RUST_BACKTRACE) create a few quite large frames, so it is
+        // important, that all frames have sufficient amount of available memory to not run over the
+        // stack...
+        const FRAME_SIZE: usize = 4096 * 10;
 
 
-fn panic_chain(depth: usize) {
-    if depth == 0 {
-        panic!("full chain!");
-    } else {
-        unsafe {
-            let layout = alloc::Layout::from_size_align(FRAME_SIZE, STACK_ALIGN).unwrap();
-            let new_stack = alloc::alloc(layout);
-            assert!(!new_stack.is_null(), "allocations must succeed!");
-            let p = psm::on_stack(new_stack, FRAME_SIZE, || {
-                panic::catch_unwind(|| {
-                    panic_chain(depth - 1);
-                })
-            });
-            alloc::dealloc(new_stack, layout);
-            p.map_err(panic::resume_unwind).unwrap()
+        fn panic_chain(depth: usize) {
+            if depth == 0 {
+                panic!("full chain!");
+            } else {
+                unsafe {
+                    let layout = alloc::Layout::from_size_align(FRAME_SIZE, STACK_ALIGN).unwrap();
+                    let new_stack = alloc::alloc(layout);
+                    assert!(!new_stack.is_null(), "allocations must succeed!");
+                    let p = psm::on_stack(new_stack, FRAME_SIZE, || {
+                        panic::catch_unwind(|| {
+                            panic_chain(depth - 1);
+                        })
+                    });
+                    alloc::dealloc(new_stack, layout);
+                    p.map_err(panic::resume_unwind).unwrap()
+                }
+            }
+        }
+    }
+    no {
+        fn panic_chain(depth: usize) {
+            eprintln!("Stack manipulation not supported by this target");
         }
     }
 }
-
 
 fn main() {
     panic_chain(CHAIN_DEPTH);
