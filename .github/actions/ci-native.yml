@@ -1,0 +1,7 @@
+name: Rust Native CI
+description: Runs Rust tests for the native target
+runs:
+- name: Build
+  run: cargo build --verbose
+- name: Test
+  run: cargo test --verbose

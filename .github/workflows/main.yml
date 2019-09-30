@@ -1,0 +1,20 @@
+name: CI
+
+on: [push]
+
+jobs:
+    x86_64-linux-latest:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: ./.github/actions/ci-native
+
+
+    x86_64-windows-latest:
+        runs-on: windows-latest
+        steps:
+            - uses: ./.github/actions/ci-native
+
+    x86_64-macos-latest:
+        runs-on: macos-latest
+        steps:
+            - uses: ./.github/actions/ci-native
