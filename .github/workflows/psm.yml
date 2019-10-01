@@ -37,7 +37,22 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=target/
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --no-capture
+      - name: Test Examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --no-capture
+      - name: Test Release
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --no-capture --release
+      - name: Test Release Examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --no-capture --release
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -106,12 +121,26 @@ jobs:
           use-cross: true
           command: build
           args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/
-      - name: Test ${{ matrix.rust_target }}
+      - name: Test
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --no-capture
+      - name: Test Examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --examples --no-capture
+      - name: Test Release
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --no-capture --release
+      - name: Test Release Examples
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --examples --no-capture --release
 
   cross-build:
     runs-on: ubuntu-latest

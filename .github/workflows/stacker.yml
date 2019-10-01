@@ -22,12 +22,19 @@ jobs:
         with:
             toolchain: ${{ matrix.rust_toolchain }}
             default: true
-      - uses: actions-rs/cargo@v1
+      - name: Build
+        uses: actions-rs/cargo@v1
         with:
           command: build
-      - uses: actions-rs/cargo@v1
+      - name: Test
+        uses: actions-rs/cargo@v1
         with:
           command: test
+      - name: Test Release
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -85,16 +92,24 @@ jobs:
             toolchain: nightly
             target: ${{ matrix.rust_target }}
             default: true
-      - uses: actions-rs/cargo@v1
+      - name: Build
+        uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
           args: --target ${{ matrix.rust_target }}
-      - uses: actions-rs/cargo@v1
+      - name: Test
+        uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }}
+          args: --target ${{ matrix.rust_target }} --test-threads=1
+      - name: Test Release
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: test
+          args: --target ${{ matrix.rust_target }} --test-threads=1 --release
 
   cross-build:
     runs-on: ubuntu-latest
