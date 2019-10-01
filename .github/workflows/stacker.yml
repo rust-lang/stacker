@@ -1,6 +1,11 @@
-name: CI
+name: Test stacker
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+    - '**.md'
+    - '**.mkd'
+    - 'LICENSE-*'
 
 jobs:
   native-test:
@@ -9,6 +14,7 @@ jobs:
       matrix:
         rust_toolchain: [nightly, stable, 1.38.0]
         os: [ubuntu-latest, windows-latest, macOS-latest]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v1
       - name: Install Rust ${{ matrix.rust_toolchain }}
@@ -70,6 +76,7 @@ jobs:
           - powerpc-unknown-linux-gnu
           - powerpc64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v1
       - name: Install Rust nightly
@@ -117,6 +124,7 @@ jobs:
           - i686-unknown-freebsd
           - x86_64-unknown-freebsd
           - x86_64-unknown-netbsd
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v1
       - name: Install Rust nightly
@@ -142,6 +150,7 @@ jobs:
           - armv7s-apple-ios
           - i386-apple-ios
           - x86_64-apple-ios
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v1
       - name: Install Rust ${{ matrix.rust_toolchain }}

@@ -1,6 +1,6 @@
 # stacker
 
-[![Build Status](https://github.com/rust-lang/stacker/workflows/CI/badge.svg)](https://github.com/rust-lang/stacker/actions)
+[![Build Status](https://github.com/rust-lang/stacker/workflows/Test%20stacker/badge.svg)](https://github.com/rust-lang/stacker/actions)
 
 [Documentation](https://docs.rs/stacker)
 

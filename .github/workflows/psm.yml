@@ -1,0 +1,172 @@
+name: Test psm
+
+on:
+  push:
+    paths:
+    - 'psm/**'
+    - '!psm/**.mkd'
+    - '!psm/LICENSE-*'
+
+jobs:
+  native-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust_toolchain: [nightly, stable, 1.38.0]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust ${{ matrix.rust_toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: ${{ matrix.rust_toolchain }}
+            default: true
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          command: build
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          command: test
+
+  # https://github.com/rust-lang/rust/issues/49078
+  # windows-gnu-test:
+  #   runs-on: windows-latest
+  #   strategy:
+  #     matrix:
+  #       rust_toolchain: [nightly, stable]
+  #       rust_target:
+  #         - x86_64-pc-windows-gnu
+  #         - i686-pc-windows-gnu
+  #   steps:
+  #     - uses: actions/checkout@v1
+  #     - name: Install Rust nightly
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           toolchain: ${{ matrix.rust_toolchain }}
+  #           target: ${{ matrix.rust_target }}
+  #           default: true
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  #         args: --target ${{ matrix.rust_target }}
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: test
+  #         args: --target ${{ matrix.rust_target }}
+
+  cross-linux-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_target:
+          - aarch64-linux-android
+          - arm-linux-androideabi
+          - armv7-linux-androideabi
+          - x86_64-linux-android
+          - aarch64-unknown-linux-gnu
+          - arm-unknown-linux-gnueabi
+          - armv7-unknown-linux-gnueabihf
+          - i686-unknown-linux-gnu
+          - i686-unknown-linux-musl
+          - mips-unknown-linux-gnu
+          - mips64-unknown-linux-gnuabi64
+          - mips64el-unknown-linux-gnuabi64
+          - mipsel-unknown-linux-gnu
+          - powerpc-unknown-linux-gnu
+          - powerpc64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            target: ${{ matrix.rust_target }}
+            default: true
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          use-cross: true
+          command: build
+          args: --target ${{ matrix.rust_target }}
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          use-cross: true
+          command: test
+          args: --target ${{ matrix.rust_target }}
+
+  cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_target:
+          # https://github.com/rust-embedded/cross/issues/333
+          - powerpc64le-unknown-linux-gnu
+          # FIXME: Testing hangs, should be verified once-in-a-while manually.
+          # could be made work by using full system emulation
+          # https://github.com/rust-embedded/cross/issues/242
+          #
+          # Currently tested manually with full-system emulation.
+          - s390x-unknown-linux-gnu
+          # FIXME: tests could be made work by using full system emulation, maybe?
+          #
+          # Currently tested manually on real hardware.
+          - sparc64-unknown-linux-gnu
+          #
+          # Not even a distribution exists that supports 32-bit SPARC...
+          # - sparc-unknown-linux-gnu
+          #
+          # No Rustc for the target exists
+          # - sparcv9-sun-solaris
+
+          # BSDs: could be tested with full system emulation
+          - i686-unknown-freebsd
+          - x86_64-unknown-freebsd
+          - x86_64-unknown-netbsd
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            target: ${{ matrix.rust_target }}
+            default: true
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          use-cross: true
+          command: build
+          args: --target ${{ matrix.rust_target }}
+
+  cross-ios-build:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        rust_toolchain: [nightly, stable]
+        rust_target:
+          - aarch64-apple-ios
+          - armv7-apple-ios
+          - armv7s-apple-ios
+          - i386-apple-ios
+          - x86_64-apple-ios
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust ${{ matrix.rust_toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: ${{ matrix.rust_toolchain }}
+            default: true
+      - name: Install ${{ matrix.rust_target }} target
+        run: rustup target add --toolchain ${{ matrix.rust_toolchain }} ${{ matrix.rust_target }}
+      - uses: actions-rs/cargo@v1
+        working-directory: psm
+        with:
+          command: build
+          args: --target=${{ matrix.rust_target }}
