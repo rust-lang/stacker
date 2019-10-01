@@ -23,16 +23,21 @@ jobs:
         with:
             toolchain: ${{ matrix.rust_toolchain }}
             default: true
+      - name: Update
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --manifest-path=psm/Cargo.toml
       - name: Build
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --manifest-path=psm/Cargo.toml
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -90,18 +95,23 @@ jobs:
             toolchain: nightly
             target: ${{ matrix.rust_target }}
             default: true
+      - name: Update
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --manifest-path=psm/Cargo.toml
       - name: Build ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/
       - name: Test ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/
 
   cross-build:
     runs-on: ubuntu-latest
@@ -126,10 +136,8 @@ jobs:
           #
           # No Rustc for the target exists
           # - sparcv9-sun-solaris
-
+          #
           # BSDs: could be tested with full system emulation
-          - i686-unknown-freebsd
-          - x86_64-unknown-freebsd
           - x86_64-unknown-netbsd
     timeout-minutes: 10
     steps:
@@ -140,12 +148,45 @@ jobs:
             toolchain: nightly
             target: ${{ matrix.rust_target }}
             default: true
+      - name: Update
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --manifest-path=psm/Cargo.toml
       - name: Build ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/
+
+  bare-cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_target:
+          # BSDs: could be tested with full system emulation
+          - i686-unknown-freebsd
+          - x86_64-unknown-freebsd
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            target: ${{ matrix.rust_target }}
+            default: true
+      - name: Update
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --manifest-path=psm/Cargo.toml
+      - name: Build ${{ matrix.rust_target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=target/
 
   cross-ios-build:
     runs-on: macos-latest
@@ -168,8 +209,13 @@ jobs:
             default: true
       - name: Install ${{ matrix.rust_target }} target
         run: rustup target add --toolchain ${{ matrix.rust_toolchain }} ${{ matrix.rust_target }}
+      - name: Update
+        uses: actions-rs/cargo@v1
+        with:
+          command: update
+          args: --manifest-path=psm/Cargo.toml
       - name: Build ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target=${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+          args: --target=${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=target/
