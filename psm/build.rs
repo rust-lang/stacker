@@ -28,7 +28,6 @@ fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'sta
         ("riscv32",    _,        _,         _) => Some(("src/arch/riscv.s", true)),
         ("riscv64",    _,        _,         _) => Some(("src/arch/riscv64.s", true)),
 
-
         // The implementations exist, but the compilers are unlikely be able to work with this.
         // ("wasm32",     _,        "unknown", _) => Some(("src/arch/wasm32.s", false)),
         // ("wasm32",     _,        "wasi",    _) => Some(("src/arch/wasm32.s", false)),

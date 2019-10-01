@@ -22,14 +22,16 @@ jobs:
         with:
             toolchain: ${{ matrix.rust_toolchain }}
             default: true
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+      - name: Build
+        uses: actions-rs/cargo@v1
         with:
           command: build
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+          args: --manifest-path=psm
+      - name: Test
+        uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --manifest-path=psm
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -51,11 +53,11 @@ jobs:
   #     - uses: actions-rs/cargo@v1
   #       with:
   #         command: build
-  #         args: --target ${{ matrix.rust_target }}
+  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm
   #     - uses: actions-rs/cargo@v1
   #       with:
   #         command: test
-  #         args: --target ${{ matrix.rust_target }}
+  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm
 
   cross-linux-test:
     runs-on: ubuntu-latest
@@ -87,18 +89,18 @@ jobs:
             toolchain: nightly
             target: ${{ matrix.rust_target }}
             default: true
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+      - name: Build ${{ matrix.rust_target }}
+        uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }}
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm
+      - name: Test ${{ matrix.rust_target }}
+        uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }}
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm
 
   cross-build:
     runs-on: ubuntu-latest
@@ -137,12 +139,12 @@ jobs:
             toolchain: nightly
             target: ${{ matrix.rust_target }}
             default: true
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+      - name: Build ${{ matrix.rust_target }}
+        uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }}
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm
 
   cross-ios-build:
     runs-on: macos-latest
@@ -165,8 +167,8 @@ jobs:
             default: true
       - name: Install ${{ matrix.rust_target }} target
         run: rustup target add --toolchain ${{ matrix.rust_toolchain }} ${{ matrix.rust_target }}
-      - uses: actions-rs/cargo@v1
-        working-directory: psm
+      - name: Build ${{ matrix.rust_target }}
+        uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target=${{ matrix.rust_target }}
+          args: --target=${{ matrix.rust_target }} --manifest-path=psm
