@@ -56,10 +56,15 @@ Target has been tested locally.
 <td rowspan="2">windows</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Yes</td>
+<td>Yes, but disabled</td>
 </tr>
 <tr>
 <td colspan="3">
+
+Stacks allocated the usual way are not valid to be used on Windows and the functions to allocate a
+stack in a proper way is a Windows implementation detail. As a (unnecessarily slow and inflexible)
+alternative use [Fibers][fibers].
+
 </td>
 </tr>
 <tr>

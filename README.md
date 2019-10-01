@@ -19,23 +19,13 @@ stacker = "0.1"
 
 ## Platform Support
 
-This library currently is verified to work on the following platforms:
+This library currently uses psm for its cross platform capabilities, with a notable exception of
+Windows, which uses an implementation based on Fibers. See the README for psm for the support
+table.
 
-* 32/64 bit Linux
-* 32/64 bit OSX
-* 32/64 bit MinGW Windows
-* 32/64 bit MSVC Windows
-* wasm32-unknown-unknown (*)
-
-On all other platforms this library is a noop. It should compile and run, but it
+On all unsupported platforms this library is a noop. It should compile and run, but it
 won't actually grow the stack and code will continue to hit the guard pages
 typically in place.
-
-(*) wasm32-unknown-unknown support isn't first class because the library only helps with
-growing the shadow stack (i.e. stack implemented in terms of linear memory). Implementation
-defined stacks (such as stacks for values, locals and call stacks) still can overflow.
-Moreover, wasm doesn't provide a way to put guard pages so memory corruption
-is possible. Use reasonable values for red zone size!
 
 # License
 
