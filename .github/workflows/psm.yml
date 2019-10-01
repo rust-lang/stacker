@@ -26,12 +26,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --manifest-path=psm
+          args: --manifest-path=psm/Cargo.toml
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm
+          args: --manifest-path=psm/Cargo.toml
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -53,11 +53,11 @@ jobs:
   #     - uses: actions-rs/cargo@v1
   #       with:
   #         command: build
-  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm
+  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
   #     - uses: actions-rs/cargo@v1
   #       with:
   #         command: test
-  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm
+  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
 
   cross-linux-test:
     runs-on: ubuntu-latest
@@ -94,13 +94,13 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
       - name: Test ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
 
   cross-build:
     runs-on: ubuntu-latest
@@ -144,7 +144,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
 
   cross-ios-build:
     runs-on: macos-latest
@@ -171,4 +171,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target=${{ matrix.rust_target }} --manifest-path=psm
+          args: --target=${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
