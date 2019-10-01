@@ -37,22 +37,22 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --no-capture
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ -- --nocapture
       - name: Test Examples
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --no-capture
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples -- --nocapture
       - name: Test Release
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --no-capture --release
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --release -- --nocapture
       - name: Test Release Examples
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --no-capture --release
+          args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --release -- --nocapture
 
   # https://github.com/rust-lang/rust/issues/49078
   # windows-gnu-test:
@@ -125,22 +125,22 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --no-capture
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ -- --test-threads=1 --nocapture
       - name: Test Examples
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --examples --no-capture
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --examples -- --test-threads=1 --nocapture
       - name: Test Release
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --no-capture --release
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --release -- --test-threads=1 --nocapture
       - name: Test Release Examples
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --test-threads=1 --examples --no-capture --release
+          args: --manifest-path=psm/Cargo.toml --target-dir=/target/ --examples --release -- --test-threads=1 --nocapture
 
   cross-build:
     runs-on: ubuntu-latest

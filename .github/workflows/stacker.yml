@@ -103,13 +103,13 @@ jobs:
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }} --test-threads=1
+          args: --target ${{ matrix.rust_target }} -- --test-threads=1
       - name: Test Release
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.rust_target }} --test-threads=1 --release
+          args: --target ${{ matrix.rust_target }} --release -- --test-threads=1
 
   cross-build:
     runs-on: ubuntu-latest
