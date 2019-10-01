@@ -4,6 +4,7 @@ on:
   push:
     paths:
     - 'psm/**'
+    - '.github/workflows/psm.yml'
     - '!psm/**.mkd'
     - '!psm/LICENSE-*'
 
