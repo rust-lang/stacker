@@ -116,7 +116,7 @@ fn set_stack_limit(l: Option<usize>) {
 psm_stack_manipulation! {
     yes {
         #[cfg(not(windows))]
-        fn _grow(stack_size: usize, f: &mut FnMut()) {
+        fn _grow(stack_size: usize, f: &mut dyn FnMut()) {
             use std::panic::{self, AssertUnwindSafe};
 
             struct StackSwitch {
@@ -199,7 +199,7 @@ psm_stack_manipulation! {
     }
     no {
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-        fn _grow(stack_size: usize, mut f: &mut FnMut()) {
+        fn _grow(stack_size: usize, mut f: &mut dyn FnMut()) {
             extern "C" {
                 fn __stacker_switch_stacks(
                     new_stack: usize,
@@ -225,21 +225,21 @@ psm_stack_manipulation! {
             unsafe {
                 __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
                                         doit as usize as *const _,
-                                        &mut f as *mut &mut FnMut() as *mut u8);
+                                        &mut f as *mut &mut dyn FnMut() as *mut u8);
             }
 
             // Once we've returned reset bothe stack limits and then return value same
             // value the closure returned.
             set_stack_limit(old_limit);
 
-            unsafe extern fn doit(f: &mut &mut FnMut()) {
+            unsafe extern fn doit(f: &mut &mut dyn FnMut()) {
                 f();
             }
         }
 
 
         #[cfg(not(any(windows, all(target_arch = "wasm32", target_os = "unknown"))))]
-        fn _grow(stack_size: usize, f: &mut FnMut()) {
+        fn _grow(stack_size: usize, f: &mut dyn FnMut()) {
             drop(stack_size);
             f();
         }
@@ -264,7 +264,7 @@ cfg_if! {
         }
 
         struct FiberInfo<'a> {
-            callback: &'a mut FnMut(),
+            callback: &'a mut dyn FnMut(),
             result: Option<std::thread::Result<()>>,
             parent_fiber: LPVOID,
         }
@@ -288,7 +288,7 @@ cfg_if! {
             return;
         }
 
-        fn _grow(stack_size: usize, callback: &mut FnMut()) {
+        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             unsafe {
                 // Fibers (or stackful coroutines) is the only way to create new stacks on the
                 // same thread on Windows. So in order to extend the stack we create fiber
