@@ -124,21 +124,25 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: test
           args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/ -- --test-threads=1 --nocapture
       - name: Test Examples
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: test
           args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/ --examples -- --test-threads=1 --nocapture
       - name: Test Release
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: test
           args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/ --release -- --test-threads=1 --nocapture
       - name: Test Release Examples
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: test
           args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml --target-dir=/target/ --examples --release -- --test-threads=1 --nocapture
 
