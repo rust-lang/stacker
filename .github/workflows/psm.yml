@@ -239,9 +239,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
             toolchain: ${{ matrix.rust_toolchain }}
+            target: ${{ matrix.rust_target }}
             default: true
-      - name: Install ${{ matrix.rust_target }} target
-        run: rustup target add --toolchain ${{ matrix.rust_toolchain }} ${{ matrix.rust_target }}
       - name: Update
         uses: actions-rs/cargo@v1
         with:
