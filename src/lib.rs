@@ -67,15 +67,41 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
     ret.unwrap()
 }
 
+/// Queries the amount of remaining stack as interpreted by this library.
+///
+/// This function will return the amount of stack space left which will be used
+/// to determine whether a stack switch should be made or not.
+pub fn remaining_stack() -> Option<usize> {
+    let current_ptr = current_stack_ptr();
+    STACK_LIMIT.with(move |slot| slot.get().map(|limit| current_ptr - limit))
+}
+
+psm_stack_information! (
+    yes {
+        fn current_stack_ptr() -> usize {
+            psm::stack_pointer() as usize
+        }
+    }
+    no {
+        #[inline(always)]
+        fn current_stack_ptr() -> Option<usize> {
+            unsafe {
+                let mut x = std::mem::MaybeUninit::uninit();
+                // Unlikely to be ever exercised. As a fallback we execute a volatile read to a
+                // local (to hopefully defeat the optimisations that would make this local a static
+                // global) and take its address. This way we get a very approximate address of the
+                // current frame.
+                x.as_mut_ptr().write_volatile(42);
+                x.as_ptr() as usize
+            }
+        }
+    }
+);
+
 thread_local! {
     static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
         guess_os_stack_limit()
     })
-}
-
-#[inline(always)]
-fn get_stack_limit() -> Option<usize> {
-    STACK_LIMIT.with(|s| s.get())
 }
 
 #[inline(always)]
