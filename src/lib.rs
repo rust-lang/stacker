@@ -1,13 +1,14 @@
 //! A library to help grow the stack when it runs out of space.
 //!
-//! This is an implementation of manually instrumented segmented stacks where
-//! points in a program's control flow are annotated with "maybe grow the stack
-//! here". Each point of annotation indicates how far away from the end of the
-//! stack it's allowed to be, plus the amount of stack to allocate if it does
-//! reach the end.
+//! This is an implementation of manually instrumented segmented stacks where points in a program's
+//! control flow are annotated with "maybe grow the stack here". Each point of annotation indicates
+//! how far away from the end of the stack it's allowed to be, plus the amount of stack to allocate
+//! if it does reach the end.
 //!
-//! Once a program has reached the end of its stack, a temporary stack on the
-//! heap is allocated and is switched to for the duration of a closure.
+//! Once a program has reached the end of its stack, a temporary stack on the heap is allocated and
+//! is switched to for the duration of a closure.
+//!
+//! For a set of lower-level primitives, consider the `psm` crate.
 //!
 //! # Examples
 //!
@@ -15,8 +16,7 @@
 //! // Grow the stack if we are within the "red zone" of 32K, and if we allocate
 //! // a new stack allocate 1MB of stack space.
 //! //
-//! // If we're already in bounds, however, just run the provided closure on our
-//! // own stack
+//! // If we're already in bounds, just run the provided closure on current stack.
 //! stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
 //!     // guaranteed to have at least 32K of stack
 //! });
@@ -36,59 +36,29 @@ use std::cell::Cell;
 
 /// Grows the call stack if necessary.
 ///
-/// This function is intended to be called at manually instrumented points in a
-/// program where recursion is known to happen quite a bit. This function will
-/// check to see if we're within `red_zone` bytes of the end of the stack, and
-/// if so it will allocate a new stack of size `stack_size`.
+/// This function is intended to be called at manually instrumented points in a program where
+/// recursion is known to happen quite a bit. This function will check to see if we're within
+/// `red_zone` bytes of the end of the stack, and if so it will allocate a new stack of at least
+/// `stack_size` bytes.
 ///
-/// The closure `f` is guaranteed to run on a stack with at least `red_zone`
-/// bytes, and it will be run on the current stack if there's space available.
+/// The closure `f` is guaranteed to run on a stack with at least `red_zone` bytes, and it will be
+/// run on the current stack if there's space available.
 #[inline(always)]
-pub fn maybe_grow<R, F: FnOnce() -> R>(
-    red_zone: usize,
-    stack_size: usize,
-    f: F,
-) -> R {
-    // if we can't guess the remaining stack (unsupported on some platforms)
-    // we immediately grow the stack and then cache the new stack size (which
-    // we do know now because we know by how much we grew the stack)
-    if remaining_stack().map_or(false, |remaining| remaining >= red_zone) {
-        f()
+pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callback: F) -> R {
+    // if we can't guess the remaining stack (unsupported on some platforms) we immediately grow
+    // the stack and then cache the new stack size (which we do know now because we allocated it.
+    let enough_space = remaining_stack().map_or(false, |remaining| remaining >= red_zone);
+    if enough_space {
+        callback()
     } else {
-        grow(stack_size, f)
+        grow(stack_size, callback)
     }
 }
-
-psm_stack_information! (
-    yes {
-        /// Queries the amount of remaining stack as interpreted by this library.
-        ///
-        /// This function will return the amount of stack space left which will be used
-        /// to determine whether a stack switch should be made or not.
-        #[inline(always)]
-        pub fn remaining_stack() -> Option<usize> {
-            get_stack_limit().map(|limit| psm::stack_pointer() as usize - limit)
-        }
-    }
-    no {
-        /// Queries the amount of remaining stack as interpreted by this library.
-        ///
-        /// This function will return the amount of stack space left which will be used
-        /// to determine whether a stack switch should be made or not.
-        #[inline(never)]
-        pub fn remaining_stack() -> Option<usize> {
-            let x = 0;
-            // FIXME: this *feels* slightly dangerous?
-            get_stack_limit().map(|limit| &x as *const _ as usize - limit)
-        }
-    }
-);
 
 /// Always creates a new stack for the passed closure to run on.
 /// The closure will still be on the same thread as the caller of `grow`.
 /// This will allocate a new stack with at least `stack_size` bytes.
-#[inline(never)]
-pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, f: F) -> R {
+pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
     let mut f = Some(f);
     let mut ret = None;
     _grow(stack_size, &mut || {

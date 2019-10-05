@@ -1,4 +1,4 @@
-# Portable Stack Manipulator
+# Portable Stack Manipulation
 
 This crate provides very portable functions to control the stack pointer and inspect the properties
 of the stack. This crate does not attempt to provide safe abstractions to any operations, the
@@ -18,9 +18,9 @@ imply an increasingly high level of support.
 * “Available” basically means that the code builds and the assembly files have been written for the
   target;
 * “Tested” means that the assembly code has been tested or otherwise verified to be correct. For
-  most targets it means that continuous integration is set up;
+  most targets it also means that continuous integration is set up;
 * “Callstack” means that the assembly code has been written with due care to support unwinding the
-  stack and showing the call frames (i.e. `gdb backtrace` works as expected).
+  stack and displaying the call frames (i.e. `gdb backtrace` works as expected).
 
 <table>
 <tr>

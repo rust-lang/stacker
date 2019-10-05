@@ -1,15 +1,13 @@
-//! # **P**ortable **S**tack **M**anipulator
-//!
+//! # **P**ortable **S**tack **M**anipulation
 //! This crate provides portable functions to control the stack pointer and inspect the properties
 //! of the stack. This crate does not attempt to provide safe abstractions to any operations, the
 //! only goals are correctness, portability and efficiency (in that exact order).  As a consequence
-//! most functions you’ll see in this crate are unsafe.
+//! most functions you will find in this crate are unsafe.
 //!
 //! Note, that the stack allocation is left up to the user. Unless you’re writing a safe
-//! abstraction over stack manipulation, this is not the crate you want. Instead consider one of
-//! the safe abstractions over this crate. A good place to look at is the crates.io’s reverse
-//! dependency list.
-// TODO: insert a link to stacker once it is moved on top of this crate.
+//! abstraction over stack manipulation, this is unlikely to be the crate you want. Instead
+//! consider one of the safe abstractions over this crate such as `stacker`. Another good place to
+//! look at is the crates.io’s reverse dependency list.
 
 #![allow(unused_macros)]
 #![no_std]
@@ -106,8 +104,6 @@ unsafe fn rust_psm_on_stack(data: usize, return_ptr: usize, callback: extern_ite
     } }
     rust_psm_on_stack(data, return_ptr, callback, sp)
 }
-
-
 
 /// Run the closure on the provided stack.
 ///
@@ -263,8 +259,6 @@ impl StackDirection {
     pub fn new() -> StackDirection {
         const ASC: u8 = StackDirection::Ascending as u8;
         const DSC: u8 = StackDirection::Descending as u8;
-
-        // FIXME: consider adding ability to cache this :)
         unsafe {
             match rust_psm_stack_direction() {
                 ASC => StackDirection::Ascending,
@@ -293,7 +287,7 @@ impl StackDirection {
 /// 1. For stack exhaustion check, remaining stack is checked against `stack_pointer` with the
 ///    padding applied;
 /// 2. Callee allocates more stack than was accounted for with padding, and accesses pages outside
-///    the stack, crashing the program.
+///    the stack, invalidating the execution (by e.g. crashing).
 #[inline(always)]
 #[cfg(asm)]
 pub fn stack_pointer() -> *mut u8 {
@@ -303,6 +297,20 @@ pub fn stack_pointer() -> *mut u8 {
 }
 
 /// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.
+///
+/// # Examples
+///
+/// ```
+/// # use psm::psm_stack_manipulation;
+/// psm_stack_manipulation! {
+///     yes {
+///         /* Functions `on_stack` and `replace_stack` are available here */
+///     }
+///     no {
+///         /* Functions `on_stack` and `replace_stack` are not available here */
+///     }
+/// }
+/// ```
 #[cfg(switchable_stack)]
 #[macro_export]
 macro_rules! psm_stack_manipulation {
@@ -310,6 +318,20 @@ macro_rules! psm_stack_manipulation {
 }
 
 /// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.
+///
+/// # Examples
+///
+/// ```
+/// # use psm::psm_stack_manipulation;
+/// psm_stack_manipulation! {
+///     yes {
+///         /* Functions `on_stack` and `replace_stack` are available here */
+///     }
+///     no {
+///         /* Functions `on_stack` and `replace_stack` are not available here */
+///     }
+/// }
+/// ```
 #[cfg(not(switchable_stack))]
 #[macro_export]
 macro_rules! psm_stack_manipulation {
@@ -318,6 +340,20 @@ macro_rules! psm_stack_manipulation {
 
 /// Macro that outputs its tokens only if `psm::stack_pointer` and `psm::StackDirection::new` are
 /// available.
+///
+/// # Examples
+///
+/// ```
+/// # use psm::psm_stack_information;
+/// psm_stack_information! {
+///     yes {
+///         /* `psm::stack_pointer` and `psm::StackDirection::new` are available here */
+///     }
+///     no {
+///         /* `psm::stack_pointer` and `psm::StackDirection::new` are not available here */
+///     }
+/// }
+/// ```
 #[cfg(asm)]
 #[macro_export]
 macro_rules! psm_stack_information {
@@ -326,6 +362,20 @@ macro_rules! psm_stack_information {
 
 /// Macro that outputs its tokens only if `psm::stack_pointer` and `psm::StackDirection::new` are
 /// available.
+///
+/// # Examples
+///
+/// ```
+/// # use psm::psm_stack_information;
+/// psm_stack_information! {
+///     yes {
+///         /* `psm::stack_pointer` and `psm::StackDirection::new` are available here */
+///     }
+///     no {
+///         /* `psm::stack_pointer` and `psm::StackDirection::new` are not available here */
+///     }
+/// }
+/// ```
 #[cfg(not(asm))]
 #[macro_export]
 macro_rules! psm_stack_information {
