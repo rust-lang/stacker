@@ -179,3 +179,20 @@ jobs:
         with:
           command: build
           args: --target=${{ matrix.rust_target }}
+
+  wasm-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            default: true
+      - name: Install wasm32-unknown-unknown stdlib
+        run: rustup target add --toolchain nightly wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Test
+        run: wasm-pack test --chrome --headless --release wasm-tests
