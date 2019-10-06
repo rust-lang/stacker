@@ -11,7 +11,6 @@
 
 #![allow(unused_macros)]
 #![no_std]
-use core::mem::MaybeUninit;
 
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
@@ -166,21 +165,30 @@ unsafe fn rust_psm_on_stack(data: usize, return_ptr: usize, callback: extern_ite
 /// ```
 #[cfg(switchable_stack)]
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
-    extern_item!{ unsafe fn with_on_stack<R, F: FnOnce() -> R>(d: usize, return_ptr: usize) {
-        let ptr = (*(return_ptr as *mut MaybeUninit<R>)).as_mut_ptr();
-        // Safe to move out from `F`, because closure in is forgotten in `on_stack` and dropping
-        // only occurs in this callback.
-        ::core::ptr::write(ptr, ::core::ptr::read(d as *const F)());
-    } }
+    use core::mem::MaybeUninit;
+
+    extern_item!{
+        unsafe fn with_on_stack<R, F: FnOnce() -> R>(callback_ptr: usize, return_ptr: usize) {
+            let return_ptr = (*(return_ptr as *mut MaybeUninit<R>)).as_mut_ptr();
+            let callback = (*(callback_ptr as *mut MaybeUninit<F>)).as_ptr();
+            // Safe to move out from `F`, because closure in is forgotten in `on_stack` and dropping
+            // only occurs in this callback.
+            return_ptr.write((callback.read())());
+        }
+    }
     let sp = match StackDirection::new() {
         StackDirection::Ascending => base,
         StackDirection::Descending => base.offset(size as isize),
     };
+    let mut callback: MaybeUninit<F> = MaybeUninit::new(callback);
     let mut return_value: MaybeUninit<R> = MaybeUninit::uninit();
-    rust_psm_on_stack(&callback as *const F as usize, &mut return_value as *mut MaybeUninit<R> as usize,
-                      with_on_stack::<R, F>, sp, base);
-    // Moved out in with_on_stack by `ptr::read`.
-    ::core::mem::forget(callback);
+    rust_psm_on_stack(
+        &mut callback as *mut MaybeUninit<F> as usize,
+        &mut return_value as *mut MaybeUninit<R> as usize,
+        with_on_stack::<R, F>,
+        sp,
+        base
+    );
     return return_value.assume_init();
 }
 

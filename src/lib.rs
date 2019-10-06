@@ -59,11 +59,9 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
 /// The closure will still be on the same thread as the caller of `grow`.
 /// This will allocate a new stack with at least `stack_size` bytes.
 pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
-    let mut f = Some(f);
     let mut ret = None;
-    _grow(stack_size, &mut || {
-        ret = Some(f.take().unwrap()());
-    });
+    let ret_ref = &mut ret;
+    _grow(stack_size, move || { *ret_ref = Some(callback()); });
     ret.unwrap()
 }
 
@@ -73,7 +71,7 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
 /// to determine whether a stack switch should be made or not.
 pub fn remaining_stack() -> Option<usize> {
     let current_ptr = current_stack_ptr();
-    STACK_LIMIT.with(move |slot| slot.get().map(|limit| current_ptr - limit))
+    get_stack_limit().map(|limit| current_ptr - limit)
 }
 
 psm_stack_information! (
@@ -105,97 +103,101 @@ thread_local! {
 }
 
 #[inline(always)]
+fn get_stack_limit() -> Option<usize> {
+    STACK_LIMIT.with(|s| s.get())
+}
+
+#[inline(always)]
 fn set_stack_limit(l: Option<usize>) {
     STACK_LIMIT.with(|s| s.set(l))
 }
 
 psm_stack_manipulation! {
     yes {
-        #[cfg(not(windows))]
-        fn _grow(stack_size: usize, f: &mut dyn FnMut()) {
-            use std::panic::{self, AssertUnwindSafe};
+        struct StackRestoreGuard {
+            new_stack: *mut libc::c_void,
+            stack_bytes: usize,
+            old_stack_limit: Option<usize>,
+        }
 
-            struct StackSwitch {
-                map: *mut libc::c_void,
-                stack_size: usize,
-                old_stack_limit: Option<usize>,
-            }
-
-            impl Drop for StackSwitch {
-                fn drop(&mut self) {
-                    unsafe {
-                        libc::munmap(self.map, self.stack_size);
-                    }
-                    set_stack_limit(self.old_stack_limit);
+        impl Drop for StackRestoreGuard {
+            fn drop(&mut self) {
+                unsafe {
+                    // FIXME: check the error code and decide what to do with it.
+                    // Perhaps a debug_assertion?
+                    libc::munmap(self.new_stack, self.stack_bytes);
                 }
+                set_stack_limit(self.old_stack_limit);
             }
+        }
 
-            // FIXME: consider caching it?
+        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+            // Calculate a number of pages we want to allocate for the new stack.
+            // For maximum portability we want to produce a stack that is aligned to a page and has
+            // a size that’s a multiple of page size. Furthermore we want to allocate an extra page
+            // for the stack guard. To achieve that we do our calculations in number of pages and
+            // convert to bytes last.
+            // FIXME: consider caching the page size.
             let page_size = unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) } as usize;
+            let requested_pages = stack_size
+                .checked_add(page_size - 1)
+                .expect("unreasonably large stack requested") / page_size;
+            let stack_pages = std::cmp::max(1, requested_pages) + 1;
+            let stack_bytes = stack_pages.checked_mul(page_size)
+                .expect("unreasonably large stack requesteed");
 
-            // Round the stack size up to a multiple of page_size
-            let rem = stack_size % page_size;
-            let stack_size = if rem == 0 {
-                stack_size
-            } else {
-                stack_size.checked_add(page_size - rem)
-                          .expect("stack size calculation overflowed")
-            };
-
-            // We need at least 2 page
-            let stack_size = std::cmp::max(stack_size, page_size);
-
-            // Add a guard page
-            let stack_size = stack_size.checked_add(page_size)
-                                       .expect("stack size calculation overflowed");
-
-            // Allocate some new stack for ourselves
-            let map = unsafe {
-                libc::mmap(std::ptr::null_mut(),
-                           stack_size,
-                           libc::PROT_NONE,
-                           libc::MAP_PRIVATE |
-                           libc::MAP_ANON,
-                           0,
-                           0)
-            };
-            if map == -1isize as _ {
-                panic!("unable to allocate stack")
-            }
-            let switch = StackSwitch {
-                map,
-                stack_size,
-                old_stack_limit: get_stack_limit(),
-            };
-            let result = unsafe {
-                libc::mprotect((map as usize + page_size) as *mut libc::c_void,
-                               stack_size - page_size,
-                               libc::PROT_READ | libc::PROT_WRITE)
-            };
-            if result == -1 {
-                panic!("unable to set stack permissions")
-            }
-
-            let stack_low = map as usize;
-
-            // Prepare stack limits for the stack switch
-            set_stack_limit(Some(stack_low));
-
+            // Next, there are a couple of approaches to how we allocate the new stack. We take the
+            // most obvious path and use `mmap`. We also `mprotect` a guard page into our
+            // allocation.
+            //
+            // We use a guard pattern to ensure we deallocate the allocated stack when we leave
+            // this function and also try to uphold various safety invariants required by `psm`
+            // (such as not unwinding from the callback we pass to it).
+            //
+            // Other than that this code has no meaningful gotchas.
             unsafe {
-                if let Some(p) = psm::on_stack(map as *mut _, stack_size, move || {
-                    panic::catch_unwind(AssertUnwindSafe(f)).err()
-                }) {
-                    panic::resume_unwind(p);
+                let new_stack = libc::mmap(
+                    std::ptr::null_mut(),
+                    stack_bytes,
+                    libc::PROT_NONE,
+                    libc::MAP_PRIVATE |
+                    libc::MAP_ANON,
+                    -1, // Some implementations assert fd = -1 if MAP_ANON is specified
+                    0
+                );
+                if new_stack == libc::MAP_FAILED {
+                    panic!("unable to allocate stack")
+                }
+                let guard = StackRestoreGuard {
+                    new_stack,
+                    stack_bytes,
+                    old_stack_limit: get_stack_limit(),
+                };
+                let above_guard_page = new_stack.add(page_size);
+                let result = libc::mprotect(
+                    above_guard_page,
+                    stack_bytes - page_size,
+                    libc::PROT_READ | libc::PROT_WRITE
+                );
+                if result == -1 {
+                    drop(guard);
+                    panic!("unable to set stack permissions")
+                }
+                set_stack_limit(Some(above_guard_page as usize));
+                let panic = psm::on_stack(above_guard_page as *mut _, stack_size, move || {
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback)).err()
+                });
+                drop(guard);
+                if let Some(p) = panic {
+                    std::panic::resume_unwind(p);
                 }
             }
-
-            // Dropping `switch` frees the memory mapping and restores the old stack limit
-            drop(switch);
         }
     }
+
     no {
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-        fn _grow(stack_size: usize, mut f: &mut dyn FnMut()) {
+        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
             extern "C" {
                 fn __stacker_switch_stacks(
                     new_stack: usize,
@@ -203,7 +205,6 @@ psm_stack_manipulation! {
                     dataptr: *mut u8
                 );
             }
-
 
             // Keep the stack 4 bytes aligned.
             let stack_size = (stack_size + 3) / 4 * 4;
@@ -220,24 +221,23 @@ psm_stack_manipulation! {
 
             unsafe {
                 __stacker_switch_stacks(stack.as_mut_ptr() as usize + stack_size,
-                                        doit as usize as *const _,
-                                        &mut f as *mut &mut dyn FnMut() as *mut u8);
+                                        ||doit as usize as *const _,
+                                        &mut f as *mut &dyn FnOnce() as *mut u8);
             }
 
             // Once we've returned reset bothe stack limits and then return value same
             // value the closure returned.
             set_stack_limit(old_limit);
 
-            unsafe extern fn doit(f: &mut &mut dyn FnMut()) {
+            unsafe extern fn doit(f: &mut &dyn FnOnce()) {
                 f();
             }
         }
 
-
         #[cfg(not(any(windows, all(target_arch = "wasm32", target_os = "unknown"))))]
-        fn _grow(stack_size: usize, f: &mut dyn FnMut()) {
+        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
             drop(stack_size);
-            f();
+            callback();
         }
     }
 }
@@ -259,52 +259,42 @@ cfg_if! {
             fn __stacker_get_current_fiber() -> PVOID;
         }
 
-        struct FiberInfo<'a> {
-            callback: &'a mut dyn FnMut(),
-            result: Option<std::thread::Result<()>>,
+        struct FiberInfo<F> {
+            callback: std::mem::MaybeUninit<F>,
+            panic: Option<Box<dyn std::any::Any + Send + 'static>>,
             parent_fiber: LPVOID,
         }
 
-        unsafe extern "system" fn fiber_proc(info: LPVOID) {
-            let info = &mut *(info as *mut FiberInfo);
-
-            // Remember the old stack limit
+        unsafe extern "system" fn fiber_proc<F: FnOnce()>(data: LPVOID) {
+            // This function is the entry point to our inner fiber, and as argument we get an
+            // instance of `FiberInfo`. We will set-up the "runtime" for the callback and execute
+            // it.
+            let data = &mut *(data as *mut FiberInfo<F>);
             let old_stack_limit = get_stack_limit();
-            // Update the limit to that of the fiber stack
             set_stack_limit(guess_os_stack_limit());
+            let callback = data.callback.as_ptr();
+            data.panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback.read())).err();
 
-            info.result = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                (info.callback)();
-            })));
-
-            // Restore the stack limit of the previous fiber
+            // Restore to the previous Fiber
             set_stack_limit(old_stack_limit);
-
-            SwitchToFiber(info.parent_fiber);
+            SwitchToFiber(data.parent_fiber);
             return;
         }
 
-        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
+        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+            // Fibers (or stackful coroutines) is the only official way to create new stacks on the
+            // same thread on Windows. So in order to extend the stack we create fiber and switch
+            // to it so we can use it's stack. After running `callback` within our fiber, we switch
+            // back to the current stack and destroy the fiber and its associated stack.
             unsafe {
-                // Fibers (or stackful coroutines) is the only way to create new stacks on the
-                // same thread on Windows. So in order to extend the stack we create fiber
-                // and switch to it so we can use it's stack. After running
-                // `callback` we switch back to the current stack and destroy
-                // the fiber and its associated stack.
-
                 let was_fiber = IsThreadAFiber() == TRUE as BOOL;
-
-                let mut info = FiberInfo {
-                    callback,
-                    result: None,
-
-                    // We need a handle to the current stack / fiber so we can switch back to it
+                let mut data = FiberInfo {
+                    callback: std::mem::MaybeUninit::new(callback),
+                    panic: None,
                     parent_fiber: {
-                        // Is the current thread already a fiber? This is the case when we already
-                        // used a fiber to extend the stack
                         if was_fiber {
-                            // Get a handle to the current fiber. We need to use C for this
-                            // as GetCurrentFiber is an header only function.
+                            // Get a handle to the current fiber. We need to use a C implementation
+                            // for this as GetCurrentFiber is an header only function.
                             __stacker_get_current_fiber()
                         } else {
                             // Convert the current thread to a fiber, so we are able to switch back
@@ -315,37 +305,35 @@ cfg_if! {
                         }
                     },
                 };
-                if info.parent_fiber.is_null() {
-                    // We don't have a handle to the fiber, so we can't switch back
+
+                if data.parent_fiber.is_null() {
                     panic!("unable to convert thread to fiber: {}", io::Error::last_os_error());
                 }
 
                 let fiber = CreateFiber(
                     stack_size as SIZE_T,
-                    Some(fiber_proc),
-                    &mut info as *mut FiberInfo as *mut _,
+                    Some(fiber_proc::<F>),
+                    &mut data as *mut FiberInfo<F> as *mut _,
                 );
                 if fiber.is_null() {
                     panic!("unable to allocate fiber: {}", io::Error::last_os_error());
                 }
 
                 // Switch to the fiber we created. This changes stacks and starts executing
-                // fiber_proc on it. fiber_proc will run `callback` and then switch back
+                // fiber_proc on it. fiber_proc will run `callback` and then switch back to run the
+                // next statement.
                 SwitchToFiber(fiber);
-
-                // We are back on the old stack and now we have destroy the fiber and its stack
                 DeleteFiber(fiber);
 
-                // If we started out on a non-fiber thread, we converted that thread to a fiber.
-                // Here we convert back.
+                // Clean-up.
                 if !was_fiber {
                     if ConvertFiberToThread() == 0 {
+                        // FIXME: Perhaps should not panic here?
                         panic!("unable to convert back to thread: {}", io::Error::last_os_error());
                     }
                 }
-
-                if let Err(payload) = info.result.unwrap() {
-                    std::panic::resume_unwind(payload);
+                if let Some(p) = data.panic {
+                    std::panic::resume_unwind(p);
                 }
             }
         }
