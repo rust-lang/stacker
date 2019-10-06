@@ -1,11 +1,9 @@
 extern crate stacker;
 
-const RED_ZONE: usize = 100*1024; // 100k
+const RED_ZONE: usize = 100 * 1024; // 100k
 const STACK_PER_RECURSION: usize = 1 * 1024 * 1024; // 1MB
 
-pub fn ensure_sufficient_stack<R, F: FnOnce() -> R + std::panic::UnwindSafe>(
-    f: F
-) -> R {
+pub fn ensure_sufficient_stack<R, F: FnOnce() -> R + std::panic::UnwindSafe>(f: F) -> R {
     stacker::maybe_grow(RED_ZONE, STACK_PER_RECURSION, f)
 }
 

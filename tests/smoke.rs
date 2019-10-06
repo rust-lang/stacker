@@ -43,16 +43,16 @@ fn panic() {
     thread::spawn(move || {
         foo(64 * 1024, &mut []);
         drop(tx);
-    }).join().unwrap_err();
+    })
+    .join()
+    .unwrap_err();
 
     assert!(rx.recv().is_err());
 }
 
 fn recursive<F: FnOnce()>(n: usize, f: F) -> usize {
     if n > 0 {
-        stacker::grow(64 * 1024, || {
-            recursive(n - 1, f) + 1
-        })
+        stacker::grow(64 * 1024, || recursive(n - 1, f) + 1)
     } else {
         f();
         0

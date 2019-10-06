@@ -59,8 +59,7 @@ extern_item! { {
     fn rust_psm_stack_pointer() -> *mut u8;
 } }
 
-
-#[cfg(all(switchable_stack, target_os="windows"))]
+#[cfg(all(switchable_stack, target_os = "windows"))]
 extern_item! { {
     fn rust_psm_replace_stack(
         data: usize,
@@ -77,9 +76,14 @@ extern_item! { {
     );
 } }
 
-#[cfg(all(switchable_stack, not(target_os="windows")))]
+#[cfg(all(switchable_stack, not(target_os = "windows")))]
 #[inline(always)]
-unsafe fn rust_psm_replace_stack(data: usize, callback: extern_item!(unsafe fn(usize) -> !), sp: *mut u8, _: *mut u8) -> ! {
+unsafe fn rust_psm_replace_stack(
+    data: usize,
+    callback: extern_item!(unsafe fn(usize) -> !),
+    sp: *mut u8,
+    _: *mut u8,
+) -> ! {
     extern_item! { {
         fn rust_psm_replace_stack(
             data: usize,
@@ -90,9 +94,15 @@ unsafe fn rust_psm_replace_stack(data: usize, callback: extern_item!(unsafe fn(u
     rust_psm_replace_stack(data, callback, sp)
 }
 
-#[cfg(all(switchable_stack, not(target_os="windows")))]
+#[cfg(all(switchable_stack, not(target_os = "windows")))]
 #[inline(always)]
-unsafe fn rust_psm_on_stack(data: usize, return_ptr: usize, callback: extern_item!(unsafe fn(usize, usize)), sp: *mut u8, _: *mut u8) {
+unsafe fn rust_psm_on_stack(
+    data: usize,
+    return_ptr: usize,
+    callback: extern_item!(unsafe fn(usize, usize)),
+    sp: *mut u8,
+    _: *mut u8,
+) {
     extern_item! { {
         fn rust_psm_on_stack(
             data: usize,
@@ -167,7 +177,7 @@ unsafe fn rust_psm_on_stack(data: usize, return_ptr: usize, callback: extern_ite
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
     use core::mem::MaybeUninit;
 
-    extern_item!{
+    extern_item! {
         unsafe fn with_on_stack<R, F: FnOnce() -> R>(callback_ptr: usize, return_ptr: usize) {
             let return_ptr = (*(return_ptr as *mut MaybeUninit<R>)).as_mut_ptr();
             let callback = (*(callback_ptr as *mut MaybeUninit<F>)).as_ptr();
@@ -187,7 +197,7 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
         &mut return_value as *mut MaybeUninit<R> as usize,
         with_on_stack::<R, F>,
         sp,
-        base
+        base,
     );
     return return_value.assume_init();
 }
@@ -247,7 +257,12 @@ pub unsafe fn replace_stack<F: FnOnce()>(base: *mut u8, size: usize, callback: F
         StackDirection::Ascending => base,
         StackDirection::Descending => base.offset(size as isize),
     };
-    rust_psm_replace_stack(&callback as *const F as usize, with_replaced_stack::<F>, sp, base);
+    rust_psm_replace_stack(
+        &callback as *const F as usize,
+        with_replaced_stack::<F>,
+        sp,
+        base,
+    );
 }
 
 /// The direction into which stack grows as stack frames are made.
@@ -299,9 +314,7 @@ impl StackDirection {
 #[inline(always)]
 #[cfg(asm)]
 pub fn stack_pointer() -> *mut u8 {
-    unsafe {
-        rust_psm_stack_pointer()
-    }
+    unsafe { rust_psm_stack_pointer() }
 }
 
 /// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.

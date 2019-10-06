@@ -61,7 +61,9 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
 pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
     let mut ret = None;
     let ret_ref = &mut ret;
-    _grow(stack_size, move || { *ret_ref = Some(callback()); });
+    _grow(stack_size, move || {
+        *ret_ref = Some(callback());
+    });
     ret.unwrap()
 }
 

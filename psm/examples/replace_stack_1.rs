@@ -26,7 +26,6 @@ psm::psm_stack_manipulation! {
     }
 }
 
-
 #[test]
 fn run_example() {
     // NOTE: intentionally out-of-processes, as the example exits with `process::exit(0)`.

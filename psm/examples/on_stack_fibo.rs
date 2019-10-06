@@ -71,7 +71,6 @@ psm::psm_stack_manipulation! {
     }
 }
 
-
 #[test]
 fn run_example() {
     main()

@@ -25,6 +25,6 @@ fn main() {
         cfg.file("src/arch/windows.c");
         cfg.include("src/arch").compile("libstacker.a");
     } else {
-        return
+        return;
     }
 }
