@@ -1,13 +1,13 @@
 [package]
 name = "stacker"
-version = "0.1.5"
-authors = ["Alex Crichton <alex@alexcrichton.com>"]
+version = "0.1.6"
+authors = ["Alex Crichton <alex@alexcrichton.com>", "Simonas Kazlauskas <git@kazlauskas.me>"]
 build = "build.rs"
 license = "MIT/Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/alexcrichton/stacker"
-homepage = "https://github.com/alexcrichton/stacker"
-documentation = "https://docs.rs/stacker"
+repository = "https://github.com/rust-lang/stacker"
+homepage = "https://github.com/rust-lang/stacker"
+documentation = "https://docs.rs/stacker/0.1.6"
 description = """
 A stack growth library useful when implementing deeply recursive algorithms that
 may accidentally blow the stack.
@@ -21,7 +21,7 @@ test = false
 [dependencies]
 cfg-if = "0.1.6"
 libc = "0.2.45"
-psm = { path = "./psm/" }
+psm = "0.1.5"
 
 [target.'cfg(windows)'.dependencies.winapi]
 version = "0.3.6"
