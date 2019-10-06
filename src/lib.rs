@@ -323,30 +323,51 @@ cfg_if! {
 
         #[inline(always)]
         unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut mi = std::mem::zeroed();
             // Query the allocation which contains our stack pointer in order
             // to discover the size of the stack
+            //
+            // FIXME: we could read stack base from the TIB, specifically the 3rd element of it.
+            type QueryT = winapi::um::winnt::MEMORY_BASIC_INFORMATION;
+            let mut mi = std::mem::MaybeUninit::<QueryT>::uninit();
             VirtualQuery(
                 psm::stack_pointer() as *const _,
-                &mut mi,
-                std::mem::size_of_val(&mi) as SIZE_T,
+                mi.as_mut_ptr(),
+                std::mem::size_of::<QueryT>() as SIZE_T,
             );
-            Some(mi.AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
+            Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }
-    } else if #[cfg(target_os = "linux")] {
-        use std::mem;
-
+    } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
         unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut attr: libc::pthread_attr_t = mem::zeroed();
-            assert_eq!(libc::pthread_attr_init(&mut attr), 0);
+            let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
+            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
             assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
-                                                &mut attr), 0);
-            let mut stackaddr = 0 as *mut _;
+                                                attr.as_mut_ptr()), 0);
+            let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
-            assert_eq!(libc::pthread_attr_getstack(&attr, &mut stackaddr,
-                                                   &mut stacksize), 0);
-            assert_eq!(libc::pthread_attr_destroy(&mut attr), 0);
+            assert_eq!(libc::pthread_attr_getstack(
+                attr.as_ptr(), &mut stackaddr, &mut stacksize
+            ), 0);
+            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
             Some(stackaddr as usize)
+        }
+    } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly"))] {
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
+            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
+            assert_eq!(libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr()), 0);
+            let mut stackaddr = std::ptr::null_mut();
+            let mut stacksize = 0;
+            assert_eq!(libc::pthread_attr_getstack(
+                attr.as_ptr(), &mut stackaddr, &mut stacksize
+            ), 0);
+            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
+            Some(stackaddr as usize)
+        }
+    } else if #[cfg(target_os = "openbsd")] {
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            let mut stackinfo = std::mem::MaybeUninit::<libc::stack_t>::uninit();
+            assert_eq!(libc::pthread_stackseg_np(libc::pthread_self(), stackinfo.as_mut_ptr()));
+            Some(stackinfo.assume_init().ss_sp)
         }
     } else if #[cfg(target_os = "macos")] {
         unsafe fn guess_os_stack_limit() -> Option<usize> {
