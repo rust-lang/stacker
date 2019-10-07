@@ -54,31 +54,38 @@ jobs:
           command: test
           args: --manifest-path=psm/Cargo.toml --target-dir=target/ --examples --release -- --nocapture
 
-  # https://github.com/rust-lang/rust/issues/49078
-  # windows-gnu-test:
-  #   runs-on: windows-latest
-  #   strategy:
-  #     matrix:
-  #       rust_toolchain: [nightly, stable]
-  #       rust_target:
-  #         - x86_64-pc-windows-gnu
-  #         - i686-pc-windows-gnu
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - name: Install Rust nightly
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #           toolchain: ${{ matrix.rust_toolchain }}
-  #           target: ${{ matrix.rust_target }}
-  #           default: true
-  #     - uses: actions-rs/cargo@v1
-  #       with:
-  #         command: build
-  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
-  #     - uses: actions-rs/cargo@v1
-  #       with:
-  #         command: test
-  #         args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+  windows-gnu-test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        rust_toolchain: [nightly, stable]
+        rust_target:
+          - x86_64-pc-windows-gnu
+          # Only 64 bit GCC is preinstalled
+          #- i686-pc-windows-gnu
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: ${{ matrix.rust_toolchain }}
+            target: ${{ matrix.rust_target }}
+            default: true
+      # https://github.com/rust-lang/rust/issues/49078
+      - name: Fix windows-gnu rust-mingw
+        run : |
+          for i in crt2.o dllcrt2.o libmingwex.a libmsvcrt.a ; do
+            cp -f "/C/ProgramData/Chocolatey/lib/mingw/tools/install/mingw64/x86_64-w64-mingw32/lib/$i" "`rustc --print sysroot`/lib/rustlib/x86_64-pc-windows-gnu/lib"
+          done
+        shell: bash
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
 
   cross-linux-test:
     runs-on: ubuntu-latest
