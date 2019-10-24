@@ -6,6 +6,8 @@ on:
     - '**.md'
     - '**.mkd'
     - 'LICENSE-*'
+  pull_request:
+    types: [opened, repoened, synchronize]
 
 jobs:
   native-test:
