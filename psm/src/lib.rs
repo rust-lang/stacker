@@ -53,20 +53,39 @@ macro_rules! extern_item {
     };
 }
 
-#[cfg(asm)]
+// NB: this could be nicer across multiple blocks but we cannot do it because of
+// https://github.com/rust-lang/rust/issues/65847
 extern_item! { {
-    fn rust_psm_stack_direction() -> u8;
-    fn rust_psm_stack_pointer() -> *mut u8;
-} }
+    #![link(name="psm_s")]
 
-#[cfg(all(switchable_stack, target_os = "windows"))]
-extern_item! { {
+    #[cfg(asm)]
+    fn rust_psm_stack_direction() -> u8;
+    #[cfg(asm)]
+    fn rust_psm_stack_pointer() -> *mut u8;
+
+    #[cfg(all(switchable_stack, not(target_os = "windows")))]
+    #[link_name="rust_psm_replace_stack"]
+    fn _rust_psm_replace_stack(
+        data: usize,
+        callback: extern_item!(unsafe fn(usize) -> !),
+        sp: *mut u8
+    ) -> !;
+    #[cfg(all(switchable_stack, not(target_os = "windows")))]
+    #[link_name="rust_psm_on_stack"]
+    fn _rust_psm_on_stack(
+        data: usize,
+        return_ptr: usize,
+        callback: extern_item!(unsafe fn(usize, usize)),
+        sp: *mut u8,
+    );
+    #[cfg(all(switchable_stack, target_os = "windows"))]
     fn rust_psm_replace_stack(
         data: usize,
         callback: extern_item!(unsafe fn(usize) -> !),
         sp: *mut u8,
         stack_base: *mut u8
     ) -> !;
+    #[cfg(all(switchable_stack, target_os = "windows"))]
     fn rust_psm_on_stack(
         data: usize,
         return_ptr: usize,
@@ -84,14 +103,7 @@ unsafe fn rust_psm_replace_stack(
     sp: *mut u8,
     _: *mut u8,
 ) -> ! {
-    extern_item! { {
-        fn rust_psm_replace_stack(
-            data: usize,
-            callback: extern_item!(unsafe fn(usize) -> !),
-            sp: *mut u8
-        ) -> !;
-    } }
-    rust_psm_replace_stack(data, callback, sp)
+    _rust_psm_replace_stack(data, callback, sp)
 }
 
 #[cfg(all(switchable_stack, not(target_os = "windows")))]
@@ -103,15 +115,7 @@ unsafe fn rust_psm_on_stack(
     sp: *mut u8,
     _: *mut u8,
 ) {
-    extern_item! { {
-        fn rust_psm_on_stack(
-            data: usize,
-            return_ptr: usize,
-            callback: extern_item!(unsafe fn(usize, usize)),
-            sp: *mut u8,
-        );
-    } }
-    rust_psm_on_stack(data, return_ptr, callback, sp)
+    _rust_psm_on_stack(data, return_ptr, callback, sp)
 }
 
 /// Run the closure on the provided stack.
