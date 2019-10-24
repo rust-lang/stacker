@@ -7,6 +7,8 @@ on:
     - '.github/workflows/psm.yml'
     - '!psm/**.mkd'
     - '!psm/LICENSE-*'
+  pull_request:
+    types: [opened, repoened, synchronize]
 
 jobs:
   native-test:
