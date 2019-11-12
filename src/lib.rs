@@ -338,7 +338,7 @@ cfg_if! {
             );
             Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }
-    } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
+    } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd", target_os = "android"))] {
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
             assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
