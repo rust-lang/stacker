@@ -13,6 +13,7 @@ jobs:
   native-test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         rust_toolchain: [nightly, stable, 1.38.0]
         os: [ubuntu-latest, windows-latest, macOS-latest]
@@ -41,6 +42,7 @@ jobs:
   windows-gnu-test:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         rust_toolchain: [nightly, stable]
         rust_target:
@@ -74,6 +76,7 @@ jobs:
   cross-linux-test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         rust_target:
           - aarch64-linux-android
@@ -123,6 +126,7 @@ jobs:
   cross-build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         rust_target:
           # https://github.com/rust-embedded/cross/issues/333
@@ -166,6 +170,7 @@ jobs:
   cross-ios-build:
     runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         rust_toolchain: [nightly, stable]
         rust_target:
