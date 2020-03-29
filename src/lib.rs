@@ -219,6 +219,9 @@ cfg_if! {
         use winapi::um::processthreadsapi::*;
         use winapi::um::winbase::*;
 
+        // Make sure the libstacker.a (implemented in C) is linked.
+        // See https://github.com/rust-lang/rust/issues/65610
+        #[link(name="stacker")]
         extern {
             fn __stacker_get_current_fiber() -> PVOID;
         }
