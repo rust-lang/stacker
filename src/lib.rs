@@ -84,7 +84,7 @@ psm_stack_information! (
     }
     no {
         #[inline(always)]
-        fn current_stack_ptr() -> Option<usize> {
+        fn current_stack_ptr() -> usize {
             unsafe {
                 let mut x = std::mem::MaybeUninit::uninit();
                 // Unlikely to be ever exercised. As a fallback we execute a volatile read to a
@@ -110,6 +110,7 @@ fn get_stack_limit() -> Option<usize> {
 }
 
 #[inline(always)]
+#[allow(unused)]
 fn set_stack_limit(l: Option<usize>) {
     STACK_LIMIT.with(|s| s.set(l))
 }
