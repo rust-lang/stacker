@@ -86,7 +86,7 @@ psm_stack_information! (
         #[inline(always)]
         fn current_stack_ptr() -> usize {
             unsafe {
-                let mut x = std::mem::MaybeUninit::uninit();
+                let mut x = std::mem::MaybeUninit::<u8>::uninit();
                 // Unlikely to be ever exercised. As a fallback we execute a volatile read to a
                 // local (to hopefully defeat the optimisations that would make this local a static
                 // global) and take its address. This way we get a very approximate address of the
