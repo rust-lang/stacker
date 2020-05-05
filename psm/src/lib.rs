@@ -281,7 +281,6 @@ pub enum StackDirection {
 
 impl StackDirection {
     /// Obtain the stack growth direction.
-    #[inline(always)]
     #[cfg(asm)]
     pub fn new() -> StackDirection {
         const ASC: u8 = StackDirection::Ascending as u8;
@@ -315,7 +314,6 @@ impl StackDirection {
 ///    padding applied;
 /// 2. Callee allocates more stack than was accounted for with padding, and accesses pages outside
 ///    the stack, invalidating the execution (by e.g. crashing).
-#[inline(always)]
 #[cfg(asm)]
 pub fn stack_pointer() -> *mut u8 {
     unsafe { rust_psm_stack_pointer() }
