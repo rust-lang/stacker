@@ -177,11 +177,24 @@ psm_stack_manipulation! {
                     old_stack_limit: get_stack_limit(),
                 };
                 let above_guard_page = new_stack.add(page_size);
+                #[cfg(not(target_os = "openbsd"))]
                 let result = libc::mprotect(
                     above_guard_page,
                     stack_bytes - page_size,
                     libc::PROT_READ | libc::PROT_WRITE
                 );
+                #[cfg(target_os = "openbsd")]
+                let result = if libc::mmap(
+                        above_guard_page,
+                        stack_bytes - page_size,
+                        libc::PROT_READ | libc::PROT_WRITE,
+                        libc::MAP_FIXED | libc::MAP_PRIVATE | libc::MAP_ANON | libc::MAP_STACK,
+                        -1,
+                        0) == above_guard_page {
+                    0
+                } else {
+                    -1
+                };
                 if result == -1 {
                     drop(guard);
                     panic!("unable to set stack permissions")
