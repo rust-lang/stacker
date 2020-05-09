@@ -137,7 +137,7 @@ psm_stack_manipulation! {
         fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
             // Calculate a number of pages we want to allocate for the new stack.
             // For maximum portability we want to produce a stack that is aligned to a page and has
-            // a size that’s a multiple of page size. Furthermore we want to allocate an extra page
+            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
             // for the stack guard. To achieve that we do our calculations in number of pages and
             // convert to bytes last.
             // FIXME: consider caching the page size.
@@ -145,7 +145,7 @@ psm_stack_manipulation! {
             let requested_pages = stack_size
                 .checked_add(page_size - 1)
                 .expect("unreasonably large stack requested") / page_size;
-            let stack_pages = std::cmp::max(1, requested_pages) + 1;
+            let stack_pages = std::cmp::max(1, requested_pages) + 2;
             let stack_bytes = stack_pages.checked_mul(page_size)
                 .expect("unreasonably large stack requesteed");
 
