@@ -59,12 +59,11 @@ fn main() {
 
     if !msvc {
         cfg.flag("-xassembler-with-cpp");
+        cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
+        cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
+        cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
     }
     cfg.file(asm);
-
-    cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
-    cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
-    cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
 
     cfg.compile("libpsm_s.a");
 }
