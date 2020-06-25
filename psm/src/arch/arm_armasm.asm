@@ -1,5 +1,5 @@
     THUMB
-    AREA CODE, READONLY
+    AREA |.text|, CODE, READONLY
 
 
     GLOBAL |rust_psm_stack_direction|
