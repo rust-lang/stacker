@@ -255,32 +255,3 @@ jobs:
         with:
           command: build
           args: --target=${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml
-
-  cross-build-without-std:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        rust_target:
-          - wasm32-wasi
-          # cannot be built because cross-toolchains are not easily available and LLVM fails
-          # generating code when building libcore anyway...?
-          # - sparcv9-sun-solaris
-          # - sparc-unknown-linux-gnu
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Rust nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-            profile: minimal
-            default: true
-      - name: Fix-up toolchain
-        run: |
-            rustup component add rust-src --toolchain nightly --target ${{ matrix.rust_target }}
-      - name: Build ${{ matrix.rust_target }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=psm/Cargo.toml -Zbuild-std=core

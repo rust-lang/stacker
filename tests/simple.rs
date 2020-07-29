@@ -18,5 +18,10 @@ fn recurse(n: usize) {
 
 #[test]
 fn foo() {
-    recurse(10000);
+    let limit = if cfg!(target_arch = "wasm32") {
+        2000
+    } else {
+        10000
+    };
+    recurse(limit);
 }

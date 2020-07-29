@@ -21,10 +21,16 @@ fn deep() {
         }
     }
 
-    foo(256 * 1024, &mut []);
+    let limit = if cfg!(target_arch = "wasm32") {
+        2000
+    } else {
+        256 * 1024
+    };
+    foo(limit, &mut []);
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", ignore)]
 fn panic() {
     fn foo(n: usize, s: &mut [u8]) {
         __stacker_black_box(s.as_ptr());
@@ -60,6 +66,7 @@ fn recursive<F: FnOnce()>(n: usize, f: F) -> usize {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", ignore)]
 fn catch_panic() {
     let panic_result = std::panic::catch_unwind(|| {
         recursive(100, || panic!());
@@ -68,6 +75,7 @@ fn catch_panic() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", ignore)]
 fn catch_panic_inside() {
     stacker::grow(64 * 1024, || {
         let panic_result = std::panic::catch_unwind(|| {
@@ -78,6 +86,7 @@ fn catch_panic_inside() {
 }
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", ignore)]
 fn catch_panic_leaf() {
     stacker::grow(64 * 1024, || {
         let panic_result = std::panic::catch_unwind(|| panic!());
