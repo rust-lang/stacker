@@ -123,42 +123,21 @@ psm_stack_manipulation! {
             old_stack_limit: Option<usize>,
         }
 
-        impl Drop for StackRestoreGuard {
-            fn drop(&mut self) {
-                unsafe {
-                    // FIXME: check the error code and decide what to do with it.
-                    // Perhaps a debug_assertion?
-                    libc::munmap(self.new_stack, self.stack_bytes);
+        impl StackRestoreGuard {
+            #[cfg(target_arch = "wasm32")]
+            unsafe fn new(stack_bytes: usize, _page_size: usize) -> StackRestoreGuard {
+                let layout = std::alloc::Layout::from_size_align(stack_bytes, 16).unwrap();
+                let ptr = std::alloc::alloc(layout);
+                assert!(!ptr.is_null(), "unable to allocate stack");
+                StackRestoreGuard {
+                    new_stack: ptr as *mut _,
+                    stack_bytes,
+                    old_stack_limit: get_stack_limit(),
                 }
-                set_stack_limit(self.old_stack_limit);
             }
-        }
 
-        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
-            // Calculate a number of pages we want to allocate for the new stack.
-            // For maximum portability we want to produce a stack that is aligned to a page and has
-            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
-            // for the stack guard. To achieve that we do our calculations in number of pages and
-            // convert to bytes last.
-            // FIXME: consider caching the page size.
-            let page_size = unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) } as usize;
-            let requested_pages = stack_size
-                .checked_add(page_size - 1)
-                .expect("unreasonably large stack requested") / page_size;
-            let stack_pages = std::cmp::max(1, requested_pages) + 2;
-            let stack_bytes = stack_pages.checked_mul(page_size)
-                .expect("unreasonably large stack requesteed");
-
-            // Next, there are a couple of approaches to how we allocate the new stack. We take the
-            // most obvious path and use `mmap`. We also `mprotect` a guard page into our
-            // allocation.
-            //
-            // We use a guard pattern to ensure we deallocate the allocated stack when we leave
-            // this function and also try to uphold various safety invariants required by `psm`
-            // (such as not unwinding from the callback we pass to it).
-            //
-            // Other than that this code has no meaningful gotchas.
-            unsafe {
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe fn new(stack_bytes: usize, page_size: usize) -> StackRestoreGuard {
                 let new_stack = libc::mmap(
                     std::ptr::null_mut(),
                     stack_bytes,
@@ -199,6 +178,55 @@ psm_stack_manipulation! {
                     drop(guard);
                     panic!("unable to set stack permissions")
                 }
+                guard
+            }
+        }
+
+        impl Drop for StackRestoreGuard {
+            fn drop(&mut self) {
+                #[cfg(target_arch = "wasm32")]
+                unsafe {
+                    std::alloc::dealloc(
+                        self.new_stack as *mut u8,
+                        std::alloc::Layout::from_size_align_unchecked(self.stack_bytes, 16),
+                    );
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                unsafe {
+                    // FIXME: check the error code and decide what to do with it.
+                    // Perhaps a debug_assertion?
+                    libc::munmap(self.new_stack, self.stack_bytes);
+                }
+                set_stack_limit(self.old_stack_limit);
+            }
+        }
+
+        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+            // Calculate a number of pages we want to allocate for the new stack.
+            // For maximum portability we want to produce a stack that is aligned to a page and has
+            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
+            // for the stack guard. To achieve that we do our calculations in number of pages and
+            // convert to bytes last.
+            let page_size = page_size();
+            let requested_pages = stack_size
+                .checked_add(page_size - 1)
+                .expect("unreasonably large stack requested") / page_size;
+            let stack_pages = std::cmp::max(1, requested_pages) + 2;
+            let stack_bytes = stack_pages.checked_mul(page_size)
+                .expect("unreasonably large stack requesteed");
+
+            // Next, there are a couple of approaches to how we allocate the new stack. We take the
+            // most obvious path and use `mmap`. We also `mprotect` a guard page into our
+            // allocation.
+            //
+            // We use a guard pattern to ensure we deallocate the allocated stack when we leave
+            // this function and also try to uphold various safety invariants required by `psm`
+            // (such as not unwinding from the callback we pass to it).
+            //
+            // Other than that this code has no meaningful gotchas.
+            unsafe {
+                let guard = StackRestoreGuard::new(stack_bytes, page_size);
+                let above_guard_page = guard.new_stack.add(page_size);
                 set_stack_limit(Some(above_guard_page as usize));
                 let panic = psm::on_stack(above_guard_page as *mut _, stack_size, move || {
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback)).err()
@@ -208,6 +236,14 @@ psm_stack_manipulation! {
                     std::panic::resume_unwind(p);
                 }
             }
+        }
+
+        fn page_size() -> usize {
+            // FIXME: consider caching the page size.
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) as usize }
+            #[cfg(target_arch = "wasm32")]
+            { 65536 }
         }
     }
 

@@ -27,10 +27,7 @@ fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'sta
         ("sparc", _, _, _) => Some(("src/arch/sparc_sysv.s", true)),
         ("riscv32", _, _, _) => Some(("src/arch/riscv.s", true)),
         ("riscv64", _, _, _) => Some(("src/arch/riscv64.s", true)),
-
-        // The implementations exist, but the compilers are unlikely be able to work with this.
-        // ("wasm32",     _,        "unknown", _) => Some(("src/arch/wasm32.s", false)),
-        // ("wasm32",     _,        "wasi",    _) => Some(("src/arch/wasm32.s", false)),
+        ("wasm32", _, _, _) => Some(("src/arch/wasm32.o", true)),
         _ => None,
     }
 }
@@ -63,7 +60,15 @@ fn main() {
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
         cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
     }
-    cfg.file(asm);
+
+    // For wasm targets we ship a precompiled `*.o` file so we just pass that
+    // directly to `ar` to assemble an archive. Otherwise we're actually
+    // compiling the source assembly file.
+    if asm.ends_with(".o") {
+        cfg.object(asm);
+    } else {
+        cfg.file(asm);
+    }
 
     cfg.compile("libpsm_s.a");
 }
