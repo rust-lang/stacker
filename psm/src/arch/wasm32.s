@@ -46,3 +46,15 @@ rust_psm_on_stack:
     local.get 3
     global.set __stack_pointer
     end_function
+
+.globl rust_psm_replace_stack
+.type rust_psm_replace_stack,@function
+rust_psm_replace_stack:
+.functype rust_psm_replace_stack (i32, i32, i32) -> ()
+    local.get 2
+    global.set __stack_pointer
+    local.get 0
+    local.get 1
+    call_indirect (i32) -> ()
+    unreachable
+    end_function
