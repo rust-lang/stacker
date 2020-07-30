@@ -106,7 +106,8 @@ jobs:
           - mips64el-unknown-linux-gnuabi64
           - mipsel-unknown-linux-gnu
           - powerpc-unknown-linux-gnu
-          - powerpc64-unknown-linux-gnu
+          # https://github.com/rust-embedded/cross/pull/440
+          # - powerpc64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
     timeout-minutes: 10
     steps:
@@ -171,7 +172,8 @@ jobs:
           # FIXME: tests could be made work by using full system emulation, maybe?
           #
           # Currently tested manually on real hardware.
-          - sparc64-unknown-linux-gnu
+          # FIXME: https://github.com/rust-embedded/cross/pull/440
+          # - sparc64-unknown-linux-gnu
           # BSDs: could be tested with full system emulation
           - x86_64-unknown-netbsd
     timeout-minutes: 10
