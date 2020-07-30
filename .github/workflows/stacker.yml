@@ -88,7 +88,7 @@ jobs:
           - mips64el-unknown-linux-gnuabi64
           - mipsel-unknown-linux-gnu
           - powerpc-unknown-linux-gnu
-          - powerpc64-unknown-linux-gnu
+          # - powerpc64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
     timeout-minutes: 10
     steps:
@@ -136,7 +136,7 @@ jobs:
           # FIXME: tests could be made work by using full system emulation, maybe?
           #
           # Currently tested manually on real hardware.
-          - sparc64-unknown-linux-gnu
+          # - sparc64-unknown-linux-gnu
           # BSDs: could be tested with full system emulation
           - i686-unknown-freebsd
           - x86_64-unknown-freebsd
