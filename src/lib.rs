@@ -118,7 +118,7 @@ fn set_stack_limit(l: Option<usize>) {
 psm_stack_manipulation! {
     yes {
         struct StackRestoreGuard {
-            new_stack: *mut libc::c_void,
+            new_stack: *mut std::ffi::c_void,
             stack_bytes: usize,
             old_stack_limit: Option<usize>,
         }
