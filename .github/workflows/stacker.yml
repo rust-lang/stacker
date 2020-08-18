@@ -48,10 +48,17 @@ jobs:
         rust_toolchain: [nightly, stable]
         rust_target:
           - x86_64-pc-windows-gnu
-          # Only 64 bit GCC is preinstalled
-          #- i686-pc-windows-gnu
+          - i686-pc-windows-gnu
     steps:
       - uses: actions/checkout@v2
+      - name: Add MSYS2 to the PATH
+        run: echo "::add-path::c:/msys64/bin"
+      - name: Add 32-bit mingw-w64 to the PATH
+        run: echo "::add-path::c:/msys64/mingw32/bin"
+        if: startsWith(matrix.rust_target, 'i686')
+      - name: Add 64-bit mingw-w64 to the PATH
+        run: echo "::add-path::c:/msys64/mingw64/bin"
+        if: startsWith(matrix.rust_target, 'x86_64')
       - name: Install Rust nightly
         uses: actions-rs/toolchain@v1
         with:
