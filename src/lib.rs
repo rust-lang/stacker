@@ -47,7 +47,10 @@ use std::cell::Cell;
 pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callback: F) -> R {
     // if we can't guess the remaining stack (unsupported on some platforms) we immediately grow
     // the stack and then cache the new stack size (which we do know now because we allocated it.
-    let enough_space = remaining_stack().map_or(false, |remaining| remaining >= red_zone);
+    let enough_space = match remaining_stack() {
+        Some(remaining) => remaining >= red_zone,
+        None => false,
+    };
     if enough_space {
         callback()
     } else {
@@ -59,11 +62,24 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
 /// The closure will still be on the same thread as the caller of `grow`.
 /// This will allocate a new stack with at least `stack_size` bytes.
 pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
+    // To avoid monomorphizing `_grow()` and everything it calls,
+    // we convert the generic callback to a dynamic one.
+    let mut opt_callback = Some(callback);
     let mut ret = None;
     let ret_ref = &mut ret;
-    _grow(stack_size, move || {
-        *ret_ref = Some(callback());
-    });
+
+    // This wrapper around `callback` achieves two things:
+    // * It converts the `impl FnOnce` to a `dyn FnMut`.
+    //   `dyn` because we want it to not be generic, and
+    //   `FnMut` because we can't pass a `dyn FnOnce` around without boxing it.
+    // * It eliminates the generic return value, by writing it to the stack of this function.
+    //   Otherwise the closure would have to return an unsized value, which isn't possible.
+    let dyn_callback: &mut dyn FnMut() = &mut || {
+        let taken_callback = opt_callback.take().unwrap();
+        *ret_ref = Some(taken_callback());
+    };
+
+    _grow(stack_size, dyn_callback);
     ret.unwrap()
 }
 
@@ -201,7 +217,7 @@ psm_stack_manipulation! {
             }
         }
 
-        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             // Calculate a number of pages we want to allocate for the new stack.
             // For maximum portability we want to produce a stack that is aligned to a page and has
             // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
@@ -249,7 +265,7 @@ psm_stack_manipulation! {
 
     no {
         #[cfg(not(windows))]
-        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             drop(stack_size);
             callback();
         }
@@ -298,7 +314,7 @@ cfg_if! {
             return;
         }
 
-        fn _grow<F: FnOnce()>(stack_size: usize, callback: F) {
+        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             // Fibers (or stackful coroutines) is the only official way to create new stacks on the
             // same thread on Windows. So in order to extend the stack we create fiber and switch
             // to it so we can use it's stack. After running `callback` within our fiber, we switch
@@ -329,8 +345,8 @@ cfg_if! {
 
                 let fiber = CreateFiber(
                     stack_size as SIZE_T,
-                    Some(fiber_proc::<F>),
-                    &mut data as *mut FiberInfo<F> as *mut _,
+                    Some(fiber_proc::<&mut dyn FnMut()>),
+                    &mut data as *mut FiberInfo<&mut dyn FnMut()> as *mut _,
                 );
                 if fiber.is_null() {
                     panic!("unable to allocate fiber: {}", io::Error::last_os_error());
