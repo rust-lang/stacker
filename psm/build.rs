@@ -16,7 +16,7 @@ fn find_assembly(
             if is_windows_host {
                 Some(("src/arch/x86_msvc.asm", false))
             } else {
-                Some(("src/arch/x86_windows_gnu.s", false))
+                Some(("src/arch/x86_windows_gnu.S", false))
             }
         }
         ("x86_64", _, "windows", "msvc") => {
@@ -31,7 +31,7 @@ fn find_assembly(
             if is_windows_host {
                 Some(("src/arch/aarch64_armasm.asm", false))
             } else {
-                Some(("src/arch/aarch_aapcs64.s", false))
+                Some(("src/arch/aarch_aapcs64.S", false))
             }
         }
         ("x86", _, "windows", _) => Some(("src/arch/x86_windows_gnu.s", false)),
@@ -87,13 +87,11 @@ fn main() {
     let mut cfg = cc::Build::new();
     let msvc = cfg.get_compiler().is_like_msvc();
 
-    if !is_windows_host {
-        if !msvc {
-            cfg.flag("-xassembler-with-cpp");
-            cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
-            cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
-            cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
-        }
+    if !msvc {
+        cfg.flag("-xassembler-with-cpp");
+        cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
+        cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
+        cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
     }
 
     // For wasm targets we ship a precompiled `*.o` file so we just pass that
