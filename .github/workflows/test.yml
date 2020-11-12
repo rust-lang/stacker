@@ -8,7 +8,7 @@ on:
     - '*.mkd'
     - 'LICENSE'
   pull_request:
-    types: [opened, repoened, synchronize]
+    types: [opened, reopened, synchronize]
 
 jobs:
   native-test:
@@ -256,6 +256,60 @@ jobs:
         with:
           command: build
           args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+
+  cross-windows-build:
+    name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        rust_target:
+          - x86_64-pc-windows-msvc
+          - i686-pc-windows-msvc
+        manifest: ['psm/Cargo.toml', 'Cargo.toml']
+        xwin_version: ["0.1.6"]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+      - name: Add toolchain shims
+        run: |
+          set -eux
+          sudo ln -s clang-12 /usr/bin/clang-cl
+          sudo ln -s llvm-ar-12 /usr/bin/llvm-lib
+          sudo ln -s lld-link-12 /usr/bin/lld-link
+      - name: Install Windows SDK
+        run: |
+          set -eux
+          xwin_version=${{ matrix.xwin_version }}
+          xwin_prefix="xwin-$xwin_version-x86_64-unknown-linux-musl"
+
+          # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
+          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$xwin_version/$xwin_prefix.tar.gz | tar -xzv -C /home/runner/.cargo/bin --strip-components=1 $xwin_prefix/xwin
+
+          # Splat the CRT and SDK files to /tmp/xwin/crt and /tmp/xwin/sdk respectively
+          xwin --accept-license 1 splat --output /tmp/xwin
+      - name: Test
+        env:
+          CC: "clang-cl"
+          CXX: "clang-cl"
+          AR: "llvm-lib"
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          # Note that we only disable unused-command-line-argument here since clang-cl
+          # doesn't implement all of the options supported by cl, but the ones it doesn't
+          # are _generally_ not interesting.
+          CFLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared"
+          # Inform the linker where to search for libraries
+          RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
+        run: |
+          set -eux
+          cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
     name: Test stacker on WASM
