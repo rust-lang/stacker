@@ -87,7 +87,7 @@ fn main() {
     let mut cfg = cc::Build::new();
     let msvc = cfg.get_compiler().is_like_msvc();
 
-    if !msvc {
+    if !msvc || !is_windows_host {
         cfg.flag("-xassembler-with-cpp");
         cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
