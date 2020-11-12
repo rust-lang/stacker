@@ -23,7 +23,7 @@ fn find_assembly(
             if masm {
                 Some(("src/arch/x86_64_msvc.asm", false))
             } else {
-                Some(("src/arch/x86_64_windows_gnu.s", false))
+                Some(("src/arch/x86_64_windows_gnu.S", false))
             }
         }
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
@@ -77,11 +77,13 @@ fn main() {
         return;
     };
 
-    if !msvc || !is_windows_host {
-        cfg.flag("-xassembler-with-cpp");
-        cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
-        cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
-        cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
+    if !is_windows_host {
+        if !msvc {
+            cfg.flag("-xassembler-with-cpp");
+            cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
+            cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
+            cfg.define(&*format!("CFG_TARGET_ENV_{}", env), None);
+        }
     }
 
     // For wasm targets we ship a precompiled `*.o` file so we just pass that
