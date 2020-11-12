@@ -1,15 +1,39 @@
 extern crate cc;
 
-fn find_assembly(arch: &str, endian: &str, os: &str, env: &str) -> Option<(&'static str, bool)> {
+fn find_assembly(
+    arch: &str,
+    endian: &str,
+    os: &str,
+    env: &str,
+    is_windows_host: bool,
+) -> Option<(&'static str, bool)> {
     match (arch, endian, os, env) {
         // The implementations for stack switching exist, but, officially, doing so without Fibers
         // is not supported in Windows. For x86_64 the implementation actually works locally,
         // but failed tests in CI (???). Might want to have a feature for experimental support
         // here.
-        ("x86", _, "windows", "msvc") => Some(("src/arch/x86_msvc.asm", false)),
-        ("x86_64", _, "windows", "msvc") => Some(("src/arch/x86_64_msvc.asm", false)),
+        ("x86", _, "windows", "msvc") => {
+            if is_windows_host {
+                Some(("src/arch/x86_msvc.asm", false))
+            } else {
+                Some(("src/arch/x86_windows_gnu.s", false))
+            }
+        }
+        ("x86_64", _, "windows", "msvc") => {
+            if is_windows_host {
+                Some(("src/arch/x86_64_msvc.asm", false))
+            } else {
+                Some(("src/arch/x86_64_windows_gnu.s", false))
+            }
+        }
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
-        ("aarch64", _, "windows", "msvc") => Some(("src/arch/aarch64_armasm.asm", false)),
+        ("aarch64", _, "windows", "msvc") => {
+            if is_windows_host {
+                Some(("src/arch/aarch64_armasm.asm", false))
+            } else {
+                Some(("src/arch/aarch_aapcs64.s", false))
+            }
+        }
         ("x86", _, "windows", _) => Some(("src/arch/x86_windows_gnu.s", false)),
         ("x86_64", _, "windows", _) => Some(("src/arch/x86_64_windows_gnu.s", false)),
 
@@ -37,19 +61,28 @@ fn main() {
     let env = ::std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
     let os = ::std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let endian = ::std::env::var("CARGO_CFG_TARGET_ENDIAN").unwrap();
-    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env) {
-        println!("cargo:rustc-cfg=asm");
-        if canswitch {
-            println!("cargo:rustc-cfg=switchable_stack")
-        }
-        asm
-    } else {
-        println!(
-            "cargo:warning=Target {}-{}-{} has no assembly files!",
-            arch, os, env
-        );
-        return;
-    };
+    // Handle cross compilation scenarios where we're using eg clang-cl
+    // from a non-windows host, as by default cc will automatically try and
+    // run the appropriate Microsoft assembler for the target architecture
+    // if we give it a .asm file
+    let is_windows_host = std::env::var("HOST")
+        .unwrap_or_default()
+        .contains("-windows-");
+
+    let asm =
+        if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, is_windows_host) {
+            println!("cargo:rustc-cfg=asm");
+            if canswitch {
+                println!("cargo:rustc-cfg=switchable_stack")
+            }
+            asm
+        } else {
+            println!(
+                "cargo:warning=Target {}-{}-{} has no assembly files!",
+                arch, os, env
+            );
+            return;
+        };
 
     let mut cfg = cc::Build::new();
     let msvc = cfg.get_compiler().is_like_msvc();
