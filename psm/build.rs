@@ -84,35 +84,38 @@ fn main() {
             return;
         };
 
+    // We are only assembling a single file and any flags in the environment probably
+    // don't apply in this case, so we don't want to use them. Unfortunately, cc
+    // doesn't provide a way to clear/ignore flags set from the environment, so
+    // we manually remove them instead
+    for key in
+        std::env::vars().filter_map(|(k, _)| if k.contains("CFLAGS") { Some(k) } else { None })
+    {
+        std::env::remove_var(key);
+    }
+
     let mut cfg = cc::Build::new();
+
+    // There seems to be a bug with clang-cl where using
+    // `/clang:-xassembler-with-cpp` is apparently accepted (ie no warnings
+    // about unused/unknown arguments), but results in the same exact error
+    // as if the flag was not present, so instead we take advantage of the
+    // fact that we're not actually compiling any C/C++ code, only assembling
+    // and can just use clang directly
+    if cfg
+        .get_compiler()
+        .path()
+        .file_name()
+        .and_then(|f| f.to_str())
+        .map(|fname| fname.contains("clang-cl"))
+        .unwrap_or(false)
+    {
+        cfg.compiler("clang");
+    }
+
     let msvc = cfg.get_compiler().is_like_msvc();
 
-    if !msvc || !is_windows_host {
-        // There seems to be a bug with clang-cl where using
-        // `/clang:-xassembler-with-cpp` is apparently accepted (ie no warnings
-        // about unused/unknown arguments), but results in the same exact error
-        // as if the flag was not present, so instead we take advantage of the
-        // fact that we're not actually compiling any C/C++ code and so don't
-        // actually need to respect any CC/CXX environment variables set to,
-        // for example, add Windows SDK include directories or the like, and if
-        // clang-cl is present, then so is clang, and we can just use it directly
-        // instead
-        if msvc && cfg.get_compiler().path().ends_with("clang-cl") {
-            // This is really dirty and I promise I feel bad about it, but
-            // cc doesn't expose a convenient way to ignore flags added from the
-            // environment :(
-            for key in
-                std::env::vars()
-                    .filter_map(|(k, _)| if k.contains("CFLAGS") { Some(k) } else { None })
-            {
-                std::env::remove_var(key);
-            }
-
-            // We need to recreate cc::Build since it caches the environment
-            cfg = cc::Build::new();
-            cfg.compiler("clang");
-        }
-
+    if !msvc {
         cfg.flag("-xassembler-with-cpp");
         cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
