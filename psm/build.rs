@@ -77,7 +77,32 @@ fn main() {
         return;
     };
 
-    if !msvc {
+    if !msvc || !is_windows_host {
+        // There seems to be a bug with clang-cl where using
+        // `/clang:-xassembler-with-cpp` is apparently accepted (ie no warnings
+        // about unused/unknown arguments), but results in the same exact error
+        // as if the flag was not present, so instead we take advantage of the
+        // fact that we're not actually compiling any C/C++ code and so don't
+        // actually need to respect any CC/CXX environment variables set to,
+        // for example, add Windows SDK include directories or the like, and if
+        // clang-cl is present, then so is clang, and we can just use it directly
+        // instead
+        if msvc && cfg.get_compiler().path().ends_with("clang-cl") {
+            // This is really dirty and I promise I feel bad about it, but
+            // cc doesn't expose a convenient way to ignore flags added from the
+            // environment :(
+            for key in
+                std::env::vars()
+                    .filter_map(|(k, _)| if k.contains("CFLAGS") { Some(k) } else { None })
+            {
+                std::env::remove_var(key);
+            }
+
+            // We need to recreate cc::Build since it caches the environment
+            cfg = cc::Build::new();
+            cfg.compiler("clang");
+        }
+
         cfg.flag("-xassembler-with-cpp");
         cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
