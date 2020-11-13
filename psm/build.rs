@@ -16,14 +16,14 @@ fn find_assembly(
             if is_windows_host {
                 Some(("src/arch/x86_msvc.asm", false))
             } else {
-                Some(("src/arch/x86_windows_gnu.S", false))
+                Some(("src/arch/x86_windows_gnu.s", false))
             }
         }
         ("x86_64", _, "windows", "msvc") => {
             if is_windows_host {
                 Some(("src/arch/x86_64_msvc.asm", false))
             } else {
-                Some(("src/arch/x86_64_windows_gnu.S", false))
+                Some(("src/arch/x86_64_windows_gnu.s", false))
             }
         }
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
@@ -31,7 +31,7 @@ fn find_assembly(
             if is_windows_host {
                 Some(("src/arch/aarch64_armasm.asm", false))
             } else {
-                Some(("src/arch/aarch_aapcs64.S", false))
+                Some(("src/arch/aarch_aapcs64.s", false))
             }
         }
         ("x86", _, "windows", _) => Some(("src/arch/x86_windows_gnu.s", false)),
@@ -40,7 +40,7 @@ fn find_assembly(
         ("x86", _, _, _) => Some(("src/arch/x86.s", true)),
         ("x86_64", _, _, _) => Some(("src/arch/x86_64.s", true)),
         ("arm", _, _, _) => Some(("src/arch/arm_aapcs.s", true)),
-        ("aarch64", _, _, _) => Some(("src/arch/aarch_aapcs64.S", true)),
+        ("aarch64", _, _, _) => Some(("src/arch/aarch_aapcs64.s", true)),
         ("powerpc", _, _, _) => Some(("src/arch/powerpc32.s", true)),
         ("powerpc64", "little", _, _) => Some(("src/arch/powerpc64_openpower.s", true)),
         ("powerpc64", _, _, _) => Some(("src/arch/powerpc64.s", true)),
