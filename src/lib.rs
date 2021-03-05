@@ -95,7 +95,7 @@ pub fn remaining_stack() -> Option<usize> {
                 None
             }
             else {
-                current_ptr - limit
+                Some(current_ptr - limit)
             }
         },
         None => None
