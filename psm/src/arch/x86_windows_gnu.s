@@ -66,7 +66,7 @@
 .endef
 .globl @rust_psm_on_stack@16
 .p2align 4
-@rust_psm_on_stack@20:
+@rust_psm_on_stack@16:
 /* extern "fastcall" fn(%ecx: usize, %edx: usize, 4(%esp): extern "fastcall" fn(usize, usize), 8(%esp): *mut u8) */
 .cfi_startproc
     pushl %ebp
