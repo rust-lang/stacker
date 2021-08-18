@@ -73,38 +73,28 @@ fn main() {
     }
 
     let mut cfg = cc::Build::new();
-    // There seems to be a bug with clang-cl where using
-    // `/clang:-xassembler-with-cpp` is apparently accepted (ie no warnings
-    // about unused/unknown arguments), but results in the same exact error
-    // as if the flag was not present, so instead we take advantage of the
-    // fact that we're not actually compiling any C/C++ code, only assembling
-    // and can just use clang directly.
-    if cfg
+    let msvc = cfg.get_compiler().is_like_msvc();
+    let clang_cl = cfg
         .get_compiler()
         .path()
         .file_name()
         .and_then(|f| f.to_str())
-        .map(|fname| fname.contains("clang-cl"))
-        .unwrap_or(false)
-    {
-        cfg.compiler("clang");
-    }
-
-    let msvc = cfg.get_compiler().is_like_msvc();
-    let asm =
-        if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, msvc) {
-            println!("cargo:rustc-cfg=asm");
-            if canswitch {
-                println!("cargo:rustc-cfg=switchable_stack")
-            }
-            asm
-        } else {
-            println!(
-                "cargo:warning=Target {}-{}-{} has no assembly files!",
-                arch, os, env
-            );
-            return;
-        };
+        .map(|f| f.contains("clang-cl"))
+        .unwrap_or(false);
+    let masm = msvc && !clang_cl;
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm) {
+        println!("cargo:rustc-cfg=asm");
+        if canswitch {
+            println!("cargo:rustc-cfg=switchable_stack")
+        }
+        asm
+    } else {
+        println!(
+            "cargo:warning=Target {}-{}-{} has no assembly files!",
+            arch, os, env
+        );
+        return;
+    };
 
     if !msvc {
         cfg.flag("-xassembler-with-cpp");

@@ -1,5 +1,3 @@
-#include "psm.h"
-
 .text
 
 .def rust_psm_stack_direction
@@ -11,7 +9,7 @@
 rust_psm_stack_direction:
 /* extern "sysv64" fn() -> u8 (%al) */
 .cfi_startproc
-    movb $STACK_DIRECTION_DESCENDING, %al # always descending on x86_64
+    movb $2, %al # always descending on x86_64
     retq
 .cfi_endproc
 

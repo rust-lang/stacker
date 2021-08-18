@@ -1,8 +1,5 @@
 /* FIXME: this works locally but not on appveyor??!? */
-
-#include "psm.h"
 /* NOTE: fastcall calling convention used on all x86 targets */
-
 .text
 
 .def @rust_psm_stack_direction@0
@@ -14,7 +11,7 @@
 @rust_psm_stack_direction@0:
 /* extern "fastcall" fn() -> u8 (%al) */
 .cfi_startproc
-    movb $STACK_DIRECTION_DESCENDING, %al # always descending on x86_64
+    movb $2, %al # always descending on x86_64
     retl
 .cfi_endproc
 
