@@ -46,6 +46,36 @@ jobs:
           command: test
           args: --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
 
+  clang-cl-test:
+    name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.clang_cl }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: ['psm/Cargo.toml', 'Cargo.toml']
+        rust_target:
+          - x86_64-pc-windows-msvc
+          - i686-pc-windows-msvc
+        include:
+          - rust_target: x86_64-pc-windows-msvc
+            clang_cl: C:/msys64/mingw64/bin/clang-cl.exe
+          - rust_target: i686-pc-windows-msvc
+            clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            profile: minimal
+            default: true
+            target: ${{ matrix.rust_target }}
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=${{ matrix.manifest }} -- --nocapture
+        env:
+          CC: ${{ matrix.clang_cl }}
+
   windows-gnu-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.rust_toolchain }}
     runs-on: windows-latest
