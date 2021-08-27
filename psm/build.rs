@@ -73,15 +73,7 @@ fn main() {
 
     let mut cfg = cc::Build::new();
     let msvc = cfg.get_compiler().is_like_msvc();
-    let clang_cl = cfg
-        .get_compiler()
-        .path()
-        .file_name()
-        .and_then(|f| f.to_str())
-        .map(|f| f.contains("clang-cl"))
-        .unwrap_or(false);
-    let masm = msvc && !clang_cl;
-    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm) {
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, msvc) {
         println!("cargo:rustc-cfg=asm");
         if canswitch {
             println!("cargo:rustc-cfg=switchable_stack")
