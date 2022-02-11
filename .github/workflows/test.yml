@@ -59,10 +59,16 @@ jobs:
         include:
           - rust_target: x86_64-pc-windows-msvc
             clang_cl: C:/msys64/mingw64/bin/clang-cl.exe
+            package: mingw-w64-x86_64-clang
           - rust_target: i686-pc-windows-msvc
             clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
+            package: mingw-w64-i686-clang
     steps:
       - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          install: ${{ matrix.package }}
       - uses: actions-rs/toolchain@v1
         with:
             toolchain: stable
@@ -87,16 +93,21 @@ jobs:
           - x86_64-pc-windows-gnu
           - i686-pc-windows-gnu
         manifest: ['psm/Cargo.toml', 'Cargo.toml']
+        include:
+          - rust_target: x86_64-pc-windows-gnu
+            mingw_path: C:/msys64/mingw64/bin
+            package: mingw-w64-x86_64-gcc
+          - rust_target: i686-pc-windows-gnu
+            mingw_path: C:/msys64/mingw32/bin
+            package: mingw-w64-i686-gcc
     steps:
       - uses: actions/checkout@v2
-      - name: Add MSYS2 to the PATH
-        run: echo "c:/msys64/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-      - name: Add 32-bit mingw-w64 to the PATH
-        run: echo "c:/msys64/mingw32/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-        if: startsWith(matrix.rust_target, 'i686')
-      - name: Add 64-bit mingw-w64 to the PATH
-        run: echo "c:/msys64/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-        if: startsWith(matrix.rust_target, 'x86_64')
+      - uses: msys2/setup-msys2@v2
+        with:
+          release: false
+          install: ${{ matrix.package }}
+      - run: echo "c:/msys64/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - run: echo "${{ matrix.mingw_path }}" | Out-File -FilePath $env:GITHUB_PATH -Append
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
