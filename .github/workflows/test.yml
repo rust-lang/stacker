@@ -277,16 +277,16 @@ jobs:
           profile: minimal
       - name: Install Wine
         env:
-          KEYRINGS: /usr/local/share/keyrings
+          KEYRINGS: /tmp/keyrings
         run: |
           set -eux
           mkdir -p $KEYRINGS;
-          apt-get update && apt-get install -y gpg
+          sudo apt-get update && apt-get install -y gpg
 
           curl --fail https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor > $KEYRINGS/winehq.gpg
-          echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
+          sudo echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
 
-          apt-get update && apt-get install -y winehq-stable
+          sudo apt-get update && apt-get install -y winehq-stable
       - name: Install Windows SDK
         env:
           XWIN_VERSION: "0.1.6"
@@ -298,14 +298,16 @@ jobs:
           curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$XWIN_VERSION/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
 
           # Splat the CRT and SDK files to /xwin/crt and /xwin/sdk respectively
-          xwin --accept-license 1 splat --output /xwin
+          sudo xwin --accept-license 1 splat --output /xwin
 
           # Remove unneeded files to reduce image size
           rm -rf .xwin-cache /usr/local/cargo/bin/xwin
       - name: Add toolchain shims
         run: |
           set -eux
-          ln -s clang-12 /usr/bin/clang-cl && ln -s llvm-ar-12 /usr/bin/llvm-lib && ln -s lld-link-12 /usr/bin/lld-link
+          sudo ln -s clang-12 /usr/bin/clang-cl
+          sudo ln -s llvm-ar-12 /usr/bin/llvm-lib
+          sudo ln -s lld-link-12 /usr/bin/lld-link
       - name: Test
         env:
           CC: "clang-cl"
