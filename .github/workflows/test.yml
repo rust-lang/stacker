@@ -275,8 +275,6 @@ jobs:
         with:
           toolchain: stable
           profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
       - name: Install Wine
         env:
           KEYRINGS: /usr/local/share/keyrings
@@ -305,7 +303,7 @@ jobs:
           # Remove unneeded files to reduce image size
           rm -rf .xwin-cache /usr/local/cargo/bin/xwin
       - name: Add toolchain shims
-        run:
+        run: |
           set -eux
           ln -s clang-12 /usr/bin/clang-cl && ln -s llvm-ar-12 /usr/bin/llvm-lib && ln -s lld-link-12 /usr/bin/lld-link
       - name: Test
@@ -326,7 +324,10 @@ jobs:
           CARGO_TARGET_X86_PC_WINDOWS_MSVC_LINKER: "lld-link"
           # Inform the linker where to search for libraries
           RUSTFLAGS: "-Lnative=/xwin/crt/lib/x86_64 -Lnative=/xwin/sdk/lib/um/x86_64 -Lnative=/xwin/sdk/lib/ucrt/x86_64"
-        run: cargo test --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
+        run: |
+          set -eux
+          rustup target add x86_64-pc-windows-msvc
+          cargo test --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
     name: Test stacker on WASM
