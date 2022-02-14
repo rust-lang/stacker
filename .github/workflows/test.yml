@@ -258,7 +258,7 @@ jobs:
           args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-windows-build:
-    name: Cross-compile ${{ matrix.manifest }} for ${{matrix.rust_target }} from x86_64-unknown-linux-gnu
+    name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: true
@@ -297,7 +297,7 @@ jobs:
         run: |
           set -eux
           rustup target add x86_64-pc-windows-msvc
-          cargo build --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
+          cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
     name: Test stacker on WASM
