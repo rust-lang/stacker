@@ -8,7 +8,7 @@ on:
     - '*.mkd'
     - 'LICENSE'
   pull_request:
-    types: [opened, repoened, synchronize]
+    types: [opened, reopened, synchronize]
 
 jobs:
   native-test:
@@ -256,6 +256,75 @@ jobs:
         with:
           command: build
           args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+
+  cross-windows-build:
+    name: Cross-compile and test ${{ matrix.manifest }} for ${{matrix.rust_target }} from x86_64-unknown-linux-gnu
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+      matrix:
+        rust_target:
+          - x86_64-pc-windows-msvc
+          - x86-pc-windows-msvc
+        manifest: ['psm/Cargo.toml', 'Cargo.toml']
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
+      - name: Install Wine
+        env:
+          KEYRINGS: /usr/local/share/keyrings
+        run: |
+          set -eux
+          mkdir -p $KEYRINGS;
+          apt-get update && apt-get install -y gpg
+          
+          curl --fail https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor > $KEYRINGS/winehq.gpg
+          echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
+      - name: Install Windows SDK
+        env:
+          XWIN_VERSION: "0.1.6"
+        run: |
+          set -eux
+          xwin_prefix="xwin-$XWIN_VERSION-x86_64-unknown-linux-musl"
+
+          # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
+          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$XWIN_VERSION/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
+
+          # Splat the CRT and SDK files to /xwin/crt and /xwin/sdk respectively
+          xwin --accept-license 1 splat --output /xwin
+          
+          # Remove unneeded files to reduce image size
+          rm -rf .xwin-cache /usr/local/cargo/bin/xwin
+      - name: Add toolchain shims
+        run:
+          set -eux
+          ln -s clang-12 /usr/bin/clang-cl && ln -s llvm-ar-12 /usr/bin/llvm-lib && ln -s lld-link-12 /usr/bin/lld-link
+      - name: Test
+        env:
+          CC: "clang-cl"
+          CXX: "clang-cl"
+          AR: "llvm-lib"
+          # wine can be quite spammy with log messages and they're generally uninteresting
+          WINEDEBUG: "-all"
+          # Use wine to run test executables
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUNNER: "wine"
+          CARGO_TARGET_X86_PC_WINDOWS_MSVC_RUNNER: "wine"
+          # Note that we only disable unused-command-line-argument here since clang-cl
+          # doesn't implement all of the options supported by cl, but the ones it doesn't
+          # are _generally_ not interesting.
+          CL_FLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/xwin/crt/include /imsvc/xwin/sdk/include/ucrt /imsvc/xwin/sdk/include/um /imsvc/xwin/sdk/include/shared"
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CARGO_TARGET_X86_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          # Inform the linker where to search for libraries
+          RUSTFLAGS: "-Lnative=/xwin/crt/lib/x86_64 -Lnative=/xwin/sdk/lib/um/x86_64 -Lnative=/xwin/sdk/lib/ucrt/x86_64"
+        run: cargo test --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
     name: Test stacker on WASM
