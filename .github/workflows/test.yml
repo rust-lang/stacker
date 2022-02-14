@@ -265,7 +265,7 @@ jobs:
       matrix:
         rust_target:
           - x86_64-pc-windows-msvc
-          - x86-pc-windows-msvc
+          - i686-pc-windows-msvc
         manifest: ['psm/Cargo.toml', 'Cargo.toml']
     timeout-minutes: 10
     steps:
@@ -291,7 +291,7 @@ jobs:
           # are _generally_ not interesting.
           CL_FLAGS: "-fuse-ld=lld-link"
           CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
-          CARGO_TARGET_X86_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: "lld-link"
           # Inform the linker where to search for libraries
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
