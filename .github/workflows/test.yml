@@ -303,7 +303,7 @@ jobs:
           # Note that we only disable unused-command-line-argument here since clang-cl
           # doesn't implement all of the options supported by cl, but the ones it doesn't
           # are _generally_ not interesting.
-          CL_FLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared"
+          CFLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared"
           # Inform the linker where to search for libraries
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
