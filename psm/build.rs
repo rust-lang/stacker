@@ -71,7 +71,8 @@ fn has_msvc_assembler(arch: &str) -> bool {
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
-        .map_or(false, |_s| true)
+        .map(|_s| true)
+        .unwrap_or(false)
 }
 
 fn main() {
