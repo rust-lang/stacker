@@ -276,17 +276,12 @@ jobs:
           toolchain: stable
           profile: minimal
       - name: Install Wine
-        env:
-          KEYRINGS: /tmp/keyrings
         run: |
           set -eux
-          mkdir -p $KEYRINGS;
-          sudo apt-get update && sudo apt-get install -y gpg
-
-          curl --fail https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor > $KEYRINGS/winehq.gpg
-          sudo echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
-
-          sudo apt-get update && sudo apt-get install -y winehq-stable
+          sudo dpkg --add-architecture i386
+          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
+          sudo apt install --install-recommends winehq-stable
       - name: Install Windows SDK
         env:
           XWIN_VERSION: "0.1.6"
@@ -298,7 +293,7 @@ jobs:
           curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$XWIN_VERSION/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
 
           # Splat the CRT and SDK files to /xwin/crt and /xwin/sdk respectively
-          sudo xwin --accept-license 1 splat --output /xwin
+          xwin --accept-license 1 splat --output /tmp/xwin
 
           # Remove unneeded files to reduce image size
           rm -rf .xwin-cache /usr/local/cargo/bin/xwin
@@ -321,11 +316,11 @@ jobs:
           # Note that we only disable unused-command-line-argument here since clang-cl
           # doesn't implement all of the options supported by cl, but the ones it doesn't
           # are _generally_ not interesting.
-          CL_FLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/xwin/crt/include /imsvc/xwin/sdk/include/ucrt /imsvc/xwin/sdk/include/um /imsvc/xwin/sdk/include/shared"
+          CL_FLAGS: "-fuse-ld=lld-link"
           CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
           CARGO_TARGET_X86_PC_WINDOWS_MSVC_LINKER: "lld-link"
           # Inform the linker where to search for libraries
-          RUSTFLAGS: "-Lnative=/xwin/crt/lib/x86_64 -Lnative=/xwin/sdk/lib/um/x86_64 -Lnative=/xwin/sdk/lib/ucrt/x86_64"
+          RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
           set -eux
           rustup target add x86_64-pc-windows-msvc
