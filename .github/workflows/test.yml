@@ -281,17 +281,29 @@ jobs:
           sudo ln -s clang-12 /usr/bin/clang-cl
           sudo ln -s llvm-ar-12 /usr/bin/llvm-lib
           sudo ln -s lld-link-12 /usr/bin/lld-link
+      - name: Install Windows SDK
+        env:
+          xwin_version: "0.1.6"
+        run: |
+          set -eux
+          xwin_prefix="xwin-${xwin_version}-x86_64-unknown-linux-musl"
+
+          # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
+          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$xwin_version/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
+
+          # Splat the CRT and SDK files to /tmp/xwin/crt and /tmp/xwin/sdk respectively
+          xwin --accept-license 1 splat --output /tmp/xwin
       - name: Test
         env:
           CC: "clang-cl"
           CXX: "clang-cl"
           AR: "llvm-lib"
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: "lld-link"
           # Note that we only disable unused-command-line-argument here since clang-cl
           # doesn't implement all of the options supported by cl, but the ones it doesn't
           # are _generally_ not interesting.
-          CL_FLAGS: "-fuse-ld=lld-link"
-          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
-          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CL_FLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared"
           # Inform the linker where to search for libraries
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
