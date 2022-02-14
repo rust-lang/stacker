@@ -281,6 +281,7 @@ jobs:
           sudo dpkg --add-architecture i386
           wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
           sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
+          sudo apt install libfaudio0:i386 libglib2.0-0:i386 libgstreamer1.0-0:i386 libgstreamer-plugins-base1.0-0:i386
           sudo apt install --install-recommends wine-stable=6.0.2~focal-1 wine-stable=6.0.2~focal-1 wine-stable-amd64=6.0.2~focal-1 wine-stable-i386=6.0.2~focal-1
       - name: Install Windows SDK
         env:
