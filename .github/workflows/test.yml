@@ -296,7 +296,7 @@ jobs:
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
           set -eux
-          rustup target add x86_64-pc-windows-msvc
+          rustup target add ${{ matrix.rust_target }}
           cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
