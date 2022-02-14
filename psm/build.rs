@@ -55,6 +55,25 @@ fn find_assembly(
     }
 }
 
+/// Checks if we have the Microsoft Macro Assember for the target architecture
+fn has_msvc_assembler(arch: &str) -> bool {
+    // See https://github.com/alexcrichton/cc-rs/blob/030baede12f079793cc50d6f90b677b889c49fcd/src/lib.rs#L1854-L1864
+    // for where these values come from
+    let assembler = match arch {
+        "x86_64" => "ml64.exe",
+        "arm" => "armasm.exe",
+        "aarch64" => "armasm64.exe",
+        _ => "ml.exe",
+    };
+
+    // We don't care of the command succeeds, only if we can run it
+    std::process::Command::new(assembler)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map_or(false, |_s| true)
+}
+
 fn main() {
     let arch = ::std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let env = ::std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
@@ -64,7 +83,14 @@ fn main() {
     let mut cfg = cc::Build::new();
 
     let msvc = cfg.get_compiler().is_like_msvc();
-    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, msvc) {
+    // If we're targeting msvc, either via regular MS toolchain or clang-cl, we
+    // will _usually_ want to use the regular Microsoft assembler if it exists,
+    // however it _probably_ won't exist if we're in a cross-compilation context
+    // from a platform that can't natively run Windows executables, so in that
+    // case we instead use the the equivalent GAS assembly file
+    let masm = msvc && has_msvc_assembler(&arch);
+
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm) {
         println!("cargo:rustc-cfg=asm");
         if canswitch {
             println!("cargo:rustc-cfg=switchable_stack")
