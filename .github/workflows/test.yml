@@ -258,7 +258,7 @@ jobs:
           args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-windows-build:
-    name: Cross-compile and test ${{ matrix.manifest }} for ${{matrix.rust_target }} from x86_64-unknown-linux-gnu
+    name: Cross-compile ${{ matrix.manifest }} for ${{matrix.rust_target }} from x86_64-unknown-linux-gnu
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: true
@@ -275,28 +275,6 @@ jobs:
         with:
           toolchain: stable
           profile: minimal
-      - name: Install Wine
-        run: |
-          set -eux
-          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
-          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
-
-          sudo apt install --install-recommends wine-stable
-      - name: Install Windows SDK
-        env:
-          XWIN_VERSION: "0.1.6"
-        run: |
-          set -eux
-          xwin_prefix="xwin-$XWIN_VERSION-x86_64-unknown-linux-musl"
-
-          # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
-          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$XWIN_VERSION/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
-
-          # Splat the CRT and SDK files to /xwin/crt and /xwin/sdk respectively
-          xwin --accept-license 1 splat --output /tmp/xwin
-
-          # Remove unneeded files to reduce image size
-          rm -rf .xwin-cache /usr/local/cargo/bin/xwin
       - name: Add toolchain shims
         run: |
           set -eux
@@ -308,11 +286,6 @@ jobs:
           CC: "clang-cl"
           CXX: "clang-cl"
           AR: "llvm-lib"
-          # wine can be quite spammy with log messages and they're generally uninteresting
-          WINEDEBUG: "-all"
-          # Use wine to run test executables
-          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUNNER: "wine"
-          CARGO_TARGET_X86_PC_WINDOWS_MSVC_RUNNER: "wine"
           # Note that we only disable unused-command-line-argument here since clang-cl
           # doesn't implement all of the options supported by cl, but the ones it doesn't
           # are _generally_ not interesting.
@@ -324,7 +297,7 @@ jobs:
         run: |
           set -eux
           rustup target add x86_64-pc-windows-msvc
-          cargo test --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
+          cargo build --target ${{ matrix.target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
     name: Test stacker on WASM
