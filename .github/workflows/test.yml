@@ -289,7 +289,7 @@ jobs:
           xwin_prefix="xwin-${xwin_version}-x86_64-unknown-linux-musl"
 
           # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
-          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$xwin_version/$xwin_prefix.tar.gz | tar -xzv -C /usr/local/cargo/bin --strip-components=1 $xwin_prefix/xwin
+          curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$xwin_version/$xwin_prefix.tar.gz | tar -xzv -C /home/runner/.cargo/bin --strip-components=1 $xwin_prefix/xwin
 
           # Splat the CRT and SDK files to /tmp/xwin/crt and /tmp/xwin/sdk respectively
           xwin --accept-license 1 splat --output /tmp/xwin
