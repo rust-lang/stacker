@@ -281,12 +281,12 @@ jobs:
         run: |
           set -eux
           mkdir -p $KEYRINGS;
-          sudo apt-get update && apt-get install -y gpg
+          sudo apt-get update && sudo apt-get install -y gpg
 
           curl --fail https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor > $KEYRINGS/winehq.gpg
           sudo echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
 
-          sudo apt-get update && apt-get install -y winehq-stable
+          sudo apt-get update && sudo apt-get install -y winehq-stable
       - name: Install Windows SDK
         env:
           XWIN_VERSION: "0.1.6"
