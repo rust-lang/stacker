@@ -284,9 +284,11 @@ jobs:
           set -eux
           mkdir -p $KEYRINGS;
           apt-get update && apt-get install -y gpg
-          
+
           curl --fail https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor > $KEYRINGS/winehq.gpg
           echo "deb [signed-by=$KEYRINGS/winehq.gpg] https://dl.winehq.org/wine-builds/ubuntu/ focal main" > /etc/apt/sources.list.d/winehq.list
+
+          apt-get update && apt-get install -y winehq-stable
       - name: Install Windows SDK
         env:
           XWIN_VERSION: "0.1.6"
@@ -299,7 +301,7 @@ jobs:
 
           # Splat the CRT and SDK files to /xwin/crt and /xwin/sdk respectively
           xwin --accept-license 1 splat --output /xwin
-          
+
           # Remove unneeded files to reduce image size
           rm -rf .xwin-cache /usr/local/cargo/bin/xwin
       - name: Add toolchain shims
