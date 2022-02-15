@@ -267,6 +267,7 @@ jobs:
           - x86_64-pc-windows-msvc
           - i686-pc-windows-msvc
         manifest: ['psm/Cargo.toml', 'Cargo.toml']
+        xwin_version: ["0.1.6"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
@@ -275,6 +276,7 @@ jobs:
         with:
           toolchain: stable
           profile: minimal
+          target: ${{ matrix.rust_target }}
       - name: Add toolchain shims
         run: |
           set -eux
@@ -282,11 +284,10 @@ jobs:
           sudo ln -s llvm-ar-12 /usr/bin/llvm-lib
           sudo ln -s lld-link-12 /usr/bin/lld-link
       - name: Install Windows SDK
-        env:
-          xwin_version: "0.1.6"
         run: |
           set -eux
-          xwin_prefix="xwin-${xwin_version}-x86_64-unknown-linux-musl"
+          xwin_version=${{ matrix.xwin_version }}
+          xwin_prefix="xwin-$xwin_version-x86_64-unknown-linux-musl"
 
           # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
           curl --fail -L https://github.com/Jake-Shadle/xwin/releases/download/$xwin_version/$xwin_prefix.tar.gz | tar -xzv -C /home/runner/.cargo/bin --strip-components=1 $xwin_prefix/xwin
@@ -308,7 +309,6 @@ jobs:
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
           set -eux
-          rustup target add ${{ matrix.rust_target }}
           cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
