@@ -12,14 +12,14 @@ fn find_assembly(
         // is not supported in Windows. For x86_64 the implementation actually works locally,
         // but failed tests in CI (???). Might want to have a feature for experimental support
         // here.
-        ("x86", _, "windows", "msvc") => {
+        ("x86", _, "windows", _) => {
             if masm {
                 Some(("src/arch/x86_msvc.asm", false))
             } else {
                 Some(("src/arch/x86_windows_gnu.s", false))
             }
         }
-        ("x86_64", _, "windows", "msvc") => {
+        ("x86_64", _, "windows", _) => {
             if masm {
                 Some(("src/arch/x86_64_msvc.asm", false))
             } else {
@@ -27,15 +27,13 @@ fn find_assembly(
             }
         }
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
-        ("aarch64", _, "windows", "msvc") => {
+        ("aarch64", _, "windows", _) => {
             if masm {
                 Some(("src/arch/aarch64_armasm.asm", false))
             } else {
                 Some(("src/arch/aarch_aapcs64.s", false))
             }
         }
-        ("x86", _, "windows", _) => Some(("src/arch/x86_windows_gnu.s", false)),
-        ("x86_64", _, "windows", _) => Some(("src/arch/x86_64_windows_gnu.s", false)),
         ("x86", _, _, _) => Some(("src/arch/x86.s", true)),
         ("x86_64", _, _, _) => Some(("src/arch/x86_64.s", true)),
         ("arm", _, _, _) => Some(("src/arch/arm_aapcs.s", true)),
