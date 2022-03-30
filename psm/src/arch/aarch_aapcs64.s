@@ -9,6 +9,13 @@
 #define FUNCTION(fnname) _##fnname
 #define SIZE(fnname,endlabel)
 
+#elif CFG_TARGET_OS_windows
+
+#define GLOBL(fnname) .globl fnname
+#define TYPE(fnname)
+#define FUNCTION(fnname) fnname
+#define SIZE(fnname,endlabel)
+
 #else
 
 #define GLOBL(fnname) .globl fnname
