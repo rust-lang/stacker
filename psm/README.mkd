@@ -478,6 +478,21 @@ The assembly code for riscv64 has been tested locally with a C caller.
 
 </td>
 </tr>
+
+<tr>
+<td rowspan="2">loongarch64</td>
+<td rowspan="2">&#42;</td>
+<td>Yes</td>
+<td>Locally</td>
+<td>Unknown</td>
+</tr>
+<tr>
+<td colspan="3">
+
+The assembly code for loongarch64 has been tested locally with a C caller.
+
+</td>
+</tr>
 </table>
 
 [GCC Farm Project]: https://cfarm.tetaneutral.net/
