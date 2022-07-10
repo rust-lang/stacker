@@ -191,8 +191,9 @@ psm_stack_manipulation! {
                     -1
                 };
                 if result == -1 {
+                    let error = std::io::Error::last_os_error();
                     drop(guard);
-                    panic!("unable to set stack permissions")
+                    panic!("setting stack permissions failed with: {}", error)
                 }
                 guard
             }
