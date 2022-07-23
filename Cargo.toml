@@ -1,13 +1,13 @@
 [package]
 name = "stacker"
-version = "0.1.14"
+version = "0.1.15"
 authors = ["Alex Crichton <alex@alexcrichton.com>", "Simonas Kazlauskas <stacker@kazlauskas.me>"]
 build = "build.rs"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/rust-lang/stacker"
 homepage = "https://github.com/rust-lang/stacker"
-documentation = "https://docs.rs/stacker/0.1.14"
+documentation = "https://docs.rs/stacker/0.1.15"
 description = """
 A stack growth library useful when implementing deeply recursive algorithms that
 may accidentally blow the stack.
