@@ -164,7 +164,8 @@ psm_stack_manipulation! {
                     0
                 );
                 if new_stack == libc::MAP_FAILED {
-                    panic!("unable to allocate stack")
+                    let error = std::io::Error::last_os_error();
+                    panic!("allocating stack failed with: {}", error)
                 }
                 let guard = StackRestoreGuard {
                     new_stack,
@@ -191,8 +192,9 @@ psm_stack_manipulation! {
                     -1
                 };
                 if result == -1 {
+                    let error = std::io::Error::last_os_error();
                     drop(guard);
-                    panic!("unable to set stack permissions")
+                    panic!("setting stack permissions failed with: {}", error)
                 }
                 guard
             }
