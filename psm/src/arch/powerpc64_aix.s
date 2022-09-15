@@ -1,5 +1,5 @@
   .csect .text[PR],2
-  .file "powerpc64.s"
+  .file "powerpc64_aix.s"
   .globl  rust_psm_stack_direction[DS]
   .globl  .rust_psm_stack_direction
   .align  4
