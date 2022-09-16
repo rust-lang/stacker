@@ -302,11 +302,18 @@ Callstack generation may fail at certain well defined ranges of the program, alt
 compiler-generated code fails at similar points itself.
 
 </td>
+</tr>
+
+<tr>
 <td rowspan="2">AIX</td>
 <td>Yes</td>
 <td>Yes</td>
 <td>Unknown</td>
+<tr>
+<td colspan="3">
+</td>
 </tr>
+
 
 <tr>
 <td rowspan="2">powerpc64le</td>
