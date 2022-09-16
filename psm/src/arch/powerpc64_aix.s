@@ -10,9 +10,12 @@
 .vbyte 8, 0
 .csect .text[PR],2
 .rust_psm_stack_direction:
+# extern "C" fn() -> u8
   li 3, 2
   blr
 L..rust_psm_stack_direction_end:
+# Following bytes form the traceback table on AIX.
+# See https://www.ibm.com/docs/en/aix/7.2?topic=processor-traceback-tables for more information.
 .vbyte 4, 0x00000000
 .byte 0x00
 .byte 0x09
@@ -35,6 +38,7 @@ L..rust_psm_stack_direction_end:
 .vbyte 8, 0
 .csect .text[PR],2
 .rust_psm_stack_pointer:
+# extern "C" fn() -> *mut u8
   mr 3, 1
   blr
 L..rust_psm_stack_pointer_end:
@@ -60,6 +64,7 @@ L..rust_psm_stack_pointer_end:
 .vbyte 8, 0
 .csect .text[PR],2
 .rust_psm_replace_stack:
+# extern "C" fn(3: usize, 4: extern "C" fn(usize), 5: *mut u8)
   ld 2, 8(4)
   ld 4, 0(4)
   addi 5, 5, -48
@@ -90,6 +95,7 @@ L..rust_psm_replace_stack_end:
 .vbyte 8, 0
 .csect .text[PR],2
 .rust_psm_on_stack:
+# extern "C" fn(3: usize, 4: extern "C" fn(usize), 5: *mut u8)
   mflr 0
   std 2, -72(6)
   std 0, -8(6)
