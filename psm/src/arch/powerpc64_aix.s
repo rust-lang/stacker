@@ -15,19 +15,26 @@
   blr
 L..rust_psm_stack_direction_end:
 # Following bytes form the traceback table on AIX.
-# See https://www.ibm.com/docs/en/aix/7.2?topic=processor-traceback-tables for more information.
-.vbyte 4, 0x00000000
-.byte 0x00
-.byte 0x09
-.byte 0x20
-.byte 0x40
-.byte 0x80
-.byte 0x00
-.byte 0x00
-.byte 0x01
-.vbyte 4, L..rust_psm_stack_direction_end-.rust_psm_stack_direction
-.vbyte 2, 0x0018
-.byte "rust_psm_stack_direction"
+# For specification, see https://www.ibm.com/docs/en/aix/7.2?topic=processor-traceback-tables.
+# For implementation, see https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/PowerPC/PPCAsmPrinter.cpp,
+# `PPCAIXAsmPrinter::emitTracebackTable`.
+.vbyte 4, 0x00000000 # Traceback table begin, for unwinder to search the table.
+.byte 0x00 # Version = 0
+.byte 0x09 # Language = CPlusPlus, since rust is using C++-like LSDA.
+.byte 0x20 # -IsGlobaLinkage, -IsOutOfLineEpilogOrPrologue
+           # +HasTraceBackTableOffset, -IsInternalProcedure
+           # -HasControlledStorage, -IsTOCless
+           # -IsFloatingPointPresent
+           # -IsFloatingPointOperationLogOrAbortEnabled
+.byte 0x40 # -IsInterruptHandler, +IsFunctionNamePresent, -IsAllocaUsed
+           # OnConditionDirective = 0, -IsCRSaved, -IsLRSaved
+.byte 0x80 # +IsBackChainStored, -IsFixup, NumOfFPRsSaved = 0
+.byte 0x00 # -HasExtensionTable, -HasVectorInfo, NumOfGPRsSaved = 0
+.byte 0x00 # NumberOfFixedParms = 0
+.byte 0x01 # NumberOfFPParms = 0, +HasParmsOnStack
+.vbyte 4, L..rust_psm_stack_direction_end-.rust_psm_stack_direction #Function size
+.vbyte 2, 0x0018 # Function name len = 24
+.byte "rust_psm_stack_direction" # Function Name
 
 .globl rust_psm_stack_pointer[DS]
 .globl .rust_psm_stack_pointer
@@ -79,9 +86,9 @@ L..rust_psm_replace_stack_end:
 .byte 0x40
 .byte 0x80
 .byte 0x00
-.byte 0x02
+.byte 0x03
 .byte 0x01
-.vbyte 4, 0x00000000
+.vbyte 4, 0x00000000 # Parameter type = i, i, i
 .vbyte 4, L..rust_psm_replace_stack_end-.rust_psm_replace_stack
 .vbyte 2, 0x0016
 .byte "rust_psm_replace_stack"
@@ -95,7 +102,7 @@ L..rust_psm_replace_stack_end:
 .vbyte 8, 0
 .csect .text[PR],2
 .rust_psm_on_stack:
-# extern "C" fn(3: usize, 4: extern "C" fn(usize), 5: *mut u8)
+# extern "C" fn(3: usize, 4: usize, 5: extern "C" fn(usize, usize), 6: *mut u8)
   mflr 0
   std 2, -72(6)
   std 0, -8(6)
@@ -116,11 +123,12 @@ L..rust_psm_on_stack_end:
 .byte 0x00
 .byte 0x09
 .byte 0x20
-.byte 0x40
+.byte 0x41
 .byte 0x80
 .byte 0x00
-.byte 0x00
+.byte 0x04
 .byte 0x01
+.vbyte 4, 0x00000000 # Parameter type = i, i, i, i
 .vbyte 4, L..rust_psm_on_stack_end-.rust_psm_on_stack
 .vbyte 2, 0x0011
 .byte "rust_psm_on_stack"
