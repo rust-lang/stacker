@@ -72,6 +72,7 @@ L..rust_psm_stack_pointer_end:
 .csect .text[PR],2
 .rust_psm_replace_stack:
 # extern "C" fn(3: usize, 4: extern "C" fn(usize), 5: *mut u8)
+  # Load the function pointer and toc pointer from TOC and make the call.
   ld 2, 8(4)
   ld 4, 0(4)
   addi 5, 5, -48
