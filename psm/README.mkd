@@ -314,7 +314,6 @@ compiler-generated code fails at similar points itself.
 </td>
 </tr>
 
-
 <tr>
 <td rowspan="2">powerpc64le</td>
 <td rowspan="2">linux</td>
