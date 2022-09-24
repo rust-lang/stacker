@@ -308,7 +308,7 @@ compiler-generated code fails at similar points itself.
 <td rowspan="2">AIX</td>
 <td>Yes</td>
 <td>Yes</td>
-<td>Unknown</td>
+<td>Yes</td>
 <tr>
 <td colspan="3">
 </td>
