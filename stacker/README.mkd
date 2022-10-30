@@ -1,0 +1,49 @@
+<div align="center">
+  <h1><code>stacker</code></h1>
+  <p>
+    <strong>A stack-growth library for Rust</strong>
+  </p>
+</div>
+
+
+`stacker` enables users to annotate fixed points in their programs where the stack may want to grow
+larger to accomodate for recursion or other kinds of heavy stack space usage. At each such
+annotation, the caller indicates how far away from the end of the stack it's allowed to be, plus
+the amount of stack to allocate if the remaining capacity is insufficient.
+
+Once a program has reached the end of its stack, a temporary stack on the heap is allocated and
+is switched to for the duration of a closure.
+
+A philosophy behind this crate is to expose a straightforward interface. In case the functionality
+provided by this crate aren’t flexible enough for your use-case, check out the `psm` crate upon
+which `stacker` is built.
+
+# Examples
+
+```
+// Grow the stack if we are within the "red zone" of 32K, and if we allocate
+// a new stack allocate an additional 1MB of stack space.
+//
+// If we're already within bounds, the provided closure will run on the current stack.
+stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
+    // guaranteed to have at least 32K of stack available to use.
+});
+```
+
+## Platform Support
+
+This library currently uses `psm` for its cross platform capabilities, with a notable exception of
+Windows, which uses an implementation based on Fibers. See the documentation of psm for the table
+of supported platforms.
+
+On all unsupported platforms this library is a noop. It should compile and run, but it won't
+actually grow the stack and code will continue to hit the guard pages typically in place.
+
+# License
+
+`stacker` is licensed under either of
+
+ * [Apache License, Version 2.0](<https://www.apache.org/licenses/LICENSE-2.0>)
+ * [MIT license](<https://opensource.org/licenses/MIT>)
+
+at your option.

@@ -1,14 +1,4 @@
-//! # **P**ortable **S**tack **M**anipulation
-//! This crate provides portable functions to control the stack pointer and inspect the properties
-//! of the stack. This crate does not attempt to provide safe abstractions to any operations, the
-//! only goals are correctness, portability and efficiency (in that exact order).  As a consequence
-//! most functions you will find in this crate are unsafe.
-//!
-//! Note, that the stack allocation is left up to the user. Unless you’re writing a safe
-//! abstraction over stack manipulation, this is unlikely to be the crate you want. Instead
-//! consider one of the safe abstractions over this crate such as `stacker`. Another good place to
-//! look at is the crates.io’s reverse dependency list.
-
+#![doc=include_str!("../README.mkd")]
 #![allow(unused_macros)]
 #![no_std]
 
