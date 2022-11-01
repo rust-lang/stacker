@@ -35,9 +35,10 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
     }
 }
 
-/// Always creates a new stack for the passed closure to run on.
-/// The closure will still be on the same thread as the caller of `grow`.
-/// This will allocate a new stack with at least `stack_size` bytes.
+/// Always runs the passed closure on a new stack.
+///
+/// The closure will still execute on the same thread as the caller of `grow`.
+/// This will allocate a new stack of at least `stack_size` bytes.
 pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
     // To avoid monomorphizing `_grow()` and everything it calls,
     // we convert the generic callback to a dynamic one.

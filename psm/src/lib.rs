@@ -1,6 +1,17 @@
 #![doc=include_str!("../README.mkd")]
 #![allow(unused_macros)]
-#![no_std]
+#![cfg_attr(not(test), no_std)]
+
+#[cfg(test)]
+extern crate core;
+
+#[path = "tests.rs"]
+mod tests;
+
+#[cfg(test)]
+fn main() {
+    tests::run();
+}
 
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
