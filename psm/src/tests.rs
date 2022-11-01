@@ -29,6 +29,7 @@ fn alloc_stack(size: usize) -> *mut u8 {
 }
 
 #[no_mangle]
+#[inline(never)]
 fn rust_psm_test_get_bt() -> backtrace::Backtrace {
     backtrace::Backtrace::new()
 }
@@ -80,7 +81,7 @@ tests! {
             let new_stack = alloc_stack(4096);
             let r = crate::on_stack(new_stack, 4096, || (crate::stack_pointer(), 42 + 42_0000));
             assert_eq!(r.1, 42_0042);
-            assert!(ptr_distance(crate::stack_pointer() as _, r.0 as _) > 0x1000_0000);
+            assert!(ptr_distance(crate::stack_pointer() as _, r.0 as _) > 0x100_0000);
             assert!(ptr_distance(new_stack as _, r.0 as _) < 4096);
         }
     }
@@ -93,11 +94,8 @@ tests! {
         };
 
         let test_get_bt_frame = find_frame_name(&bt, b"rust_psm_test_get_bt");
-        let on_stack_bt_frame = find_frame_name(&bt, b"rust_psm_on_stack");
-
         assert!(test_get_bt_frame.is_some());
-        assert!(on_stack_bt_frame.is_some());
-        assert!(bt.frames().len() > on_stack_bt_frame.unwrap().0 + 4);
+        assert!(bt.frames().len() > test_get_bt_frame.unwrap().0 + 4);
     }
 
 
@@ -170,7 +168,7 @@ tests! {
             let init_stack_ptr = crate::stack_pointer();
             let new_stack = alloc_stack(4096 * 64);
             crate::replace_stack(new_stack, 4096 * 64, || {
-                assert!(ptr_distance(crate::stack_pointer() as _, init_stack_ptr as _) > 0x1000_0000);
+                assert!(ptr_distance(crate::stack_pointer() as _, init_stack_ptr as _) > 0x100_0000);
                 assert!(ptr_distance(crate::stack_pointer() as _, new_stack as _) < 4096 * 64);
                 std::process::exit(0)
             });
