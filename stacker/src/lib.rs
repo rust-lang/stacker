@@ -1,27 +1,4 @@
-//! A library to help grow the stack when it runs out of space.
-//!
-//! This is an implementation of manually instrumented segmented stacks where points in a program's
-//! control flow are annotated with "maybe grow the stack here". Each point of annotation indicates
-//! how far away from the end of the stack it's allowed to be, plus the amount of stack to allocate
-//! if it does reach the end.
-//!
-//! Once a program has reached the end of its stack, a temporary stack on the heap is allocated and
-//! is switched to for the duration of a closure.
-//!
-//! For a set of lower-level primitives, consider the `psm` crate.
-//!
-//! # Examples
-//!
-//! ```
-//! // Grow the stack if we are within the "red zone" of 32K, and if we allocate
-//! // a new stack allocate 1MB of stack space.
-//! //
-//! // If we're already in bounds, just run the provided closure on current stack.
-//! stacker::maybe_grow(32 * 1024, 1024 * 1024, || {
-//!     // guaranteed to have at least 32K of stack
-//! });
-//! ```
-
+#![doc=include_str!("../README.mkd")]
 #![allow(improper_ctypes)]
 
 #[macro_use]
@@ -58,9 +35,10 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
     }
 }
 
-/// Always creates a new stack for the passed closure to run on.
-/// The closure will still be on the same thread as the caller of `grow`.
-/// This will allocate a new stack with at least `stack_size` bytes.
+/// Always runs the passed closure on a new stack.
+///
+/// The closure will still execute on the same thread as the caller of `grow`.
+/// This will allocate a new stack of at least `stack_size` bytes.
 pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
     // To avoid monomorphizing `_grow()` and everything it calls,
     // we convert the generic callback to a dynamic one.

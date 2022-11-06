@@ -1,16 +1,19 @@
-//! # **P**ortable **S**tack **M**anipulation
-//! This crate provides portable functions to control the stack pointer and inspect the properties
-//! of the stack. This crate does not attempt to provide safe abstractions to any operations, the
-//! only goals are correctness, portability and efficiency (in that exact order).  As a consequence
-//! most functions you will find in this crate are unsafe.
-//!
-//! Note, that the stack allocation is left up to the user. Unless you’re writing a safe
-//! abstraction over stack manipulation, this is unlikely to be the crate you want. Instead
-//! consider one of the safe abstractions over this crate such as `stacker`. Another good place to
-//! look at is the crates.io’s reverse dependency list.
-
+#![doc=include_str!("../README.mkd")]
 #![allow(unused_macros)]
-#![no_std]
+#![cfg_attr(not(test), no_std)]
+
+#[cfg(test)]
+extern crate core;
+
+#[path = "tests.rs"]
+mod tests;
+
+#[cfg(test)]
+fn main() {
+    tests::run();
+}
+
+mod arch;
 
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
@@ -177,7 +180,6 @@ unsafe fn rust_psm_on_stack(
 ///     println!("4 + 4 = {} has been calculated on stack {:p}", result, stack);
 /// }
 /// ```
-#[cfg(switchable_stack)]
 pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback: F) -> R {
     use core::mem::MaybeUninit;
 
@@ -196,13 +198,20 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
     };
     let mut callback: MaybeUninit<F> = MaybeUninit::new(callback);
     let mut return_value: MaybeUninit<R> = MaybeUninit::uninit();
-    rust_psm_on_stack(
+    arch::on_stack(
         &mut callback as *mut MaybeUninit<F> as usize,
         &mut return_value as *mut MaybeUninit<R> as usize,
         with_on_stack::<R, F>,
         sp,
         base,
     );
+    // rust_psm_on_stack(
+    //     &mut callback as *mut MaybeUninit<F> as usize,
+    //     &mut return_value as *mut MaybeUninit<R> as usize,
+    //     with_on_stack::<R, F>,
+    //     sp,
+    //     base,
+    // );
     return return_value.assume_init();
 }
 
@@ -249,7 +258,6 @@ pub unsafe fn on_stack<R, F: FnOnce() -> R>(base: *mut u8, size: usize, callback
 ///
 /// `callback` must not return (not enforced by typesystem currently because `!` is unstable),
 /// unwind or otherwise return control flow to any of the previous frames.
-#[cfg(switchable_stack)]
 pub unsafe fn replace_stack<F: FnOnce()>(base: *mut u8, size: usize, callback: F) -> ! {
     extern_item! { unsafe fn with_replaced_stack<F: FnOnce()>(d: usize) -> ! {
         // Safe to move out, because the closure is essentially forgotten by
@@ -261,12 +269,12 @@ pub unsafe fn replace_stack<F: FnOnce()>(base: *mut u8, size: usize, callback: F
         StackDirection::Ascending => base,
         StackDirection::Descending => base.offset(size as isize),
     };
-    rust_psm_replace_stack(
+    arch::replace_stack(
         &callback as *const F as usize,
         with_replaced_stack::<F>,
         sp,
         base,
-    );
+    )
 }
 
 /// The direction into which stack grows as stack frames are made.
@@ -281,17 +289,17 @@ pub enum StackDirection {
 
 impl StackDirection {
     /// Obtain the stack growth direction.
-    #[cfg(asm)]
     pub fn new() -> StackDirection {
-        const ASC: u8 = StackDirection::Ascending as u8;
-        const DSC: u8 = StackDirection::Descending as u8;
-        unsafe {
-            match rust_psm_stack_direction() {
-                ASC => StackDirection::Ascending,
-                DSC => StackDirection::Descending,
-                _ => ::core::hint::unreachable_unchecked(),
-            }
-        }
+        arch::stack_direction()
+        // const ASC: u8 = StackDirection::Ascending as u8;
+        // const DSC: u8 = StackDirection::Descending as u8;
+        // unsafe {
+        //     match rust_psm_stack_direction() {
+        //         ASC => StackDirection::Ascending,
+        //         DSC => StackDirection::Descending,
+        //         _ => ::core::hint::unreachable_unchecked(),
+        //     }
+        // }
     }
 }
 
@@ -314,9 +322,8 @@ impl StackDirection {
 ///    padding applied;
 /// 2. Callee allocates more stack than was accounted for with padding, and accesses pages outside
 ///    the stack, invalidating the execution (by e.g. crashing).
-#[cfg(asm)]
 pub fn stack_pointer() -> *mut u8 {
-    unsafe { rust_psm_stack_pointer() }
+    arch::stack_pointer()
 }
 
 /// Macro that outputs its tokens only if `psm::on_stack` and `psm::replace_stack` are available.
