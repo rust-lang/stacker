@@ -48,11 +48,10 @@ rust_psm_on_stack:
 .cfi_startproc
     sd x1, -8(x13)
     sd x2, -16(x13)
-    .cfi_def_cfa x13, 0
+    addi x2, x13, -16
+    .cfi_def_cfa x2, 16
     .cfi_offset x1, -8
     .cfi_offset x2, -16
-    addi x2, x13, -16
-    .cfi_def_cfa x2, -16
     jalr x1, x12, 0
     ld x1, 8(x2)
     .cfi_restore x1

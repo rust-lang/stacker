@@ -28,7 +28,7 @@
 extern crate cfg_if;
 extern crate libc;
 #[cfg(windows)]
-extern crate winapi;
+extern crate windows_sys;
 #[macro_use]
 extern crate psm;
 
@@ -102,7 +102,7 @@ pub fn remaining_stack() -> Option<usize> {
     }
 }
 
-psm_stack_information! (
+psm_stack_information!(
     yes {
         fn current_stack_ptr() -> usize {
             psm::stack_pointer() as usize
@@ -174,7 +174,8 @@ psm_stack_manipulation! {
                     0
                 );
                 if new_stack == libc::MAP_FAILED {
-                    panic!("unable to allocate stack")
+                    let error = std::io::Error::last_os_error();
+                    panic!("allocating stack failed with: {}", error)
                 }
                 let guard = StackRestoreGuard {
                     new_stack,
@@ -201,8 +202,9 @@ psm_stack_manipulation! {
                     -1
                 };
                 if result == -1 {
+                    let error = std::io::Error::last_os_error();
                     drop(guard);
-                    panic!("unable to set stack permissions")
+                    panic!("setting stack permissions failed with: {}", error)
                 }
                 guard
             }
@@ -286,29 +288,27 @@ cfg_if! {
     if #[cfg(windows)] {
         use std::ptr;
         use std::io;
-
-        use winapi::shared::basetsd::*;
-        use winapi::shared::minwindef::{LPVOID, BOOL};
-        use winapi::shared::ntdef::*;
-        use winapi::um::fibersapi::*;
-        use winapi::um::memoryapi::*;
-        use winapi::um::processthreadsapi::*;
-        use winapi::um::winbase::*;
+        use libc::c_void;
+        use windows_sys::Win32::System::Threading::{SwitchToFiber, IsThreadAFiber, ConvertThreadToFiber,
+            CreateFiber, DeleteFiber, ConvertFiberToThread, SetThreadStackGuarantee
+        };
+        use windows_sys::Win32::Foundation::BOOL;
+        use windows_sys::Win32::System::Memory::VirtualQuery;
 
         // Make sure the libstacker.a (implemented in C) is linked.
         // See https://github.com/rust-lang/rust/issues/65610
         #[link(name="stacker")]
         extern {
-            fn __stacker_get_current_fiber() -> PVOID;
+            fn __stacker_get_current_fiber() -> *mut c_void;
         }
 
         struct FiberInfo<F> {
             callback: std::mem::MaybeUninit<F>,
             panic: Option<Box<dyn std::any::Any + Send + 'static>>,
-            parent_fiber: LPVOID,
+            parent_fiber: *mut c_void,
         }
 
-        unsafe extern "system" fn fiber_proc<F: FnOnce()>(data: LPVOID) {
+        unsafe extern "system" fn fiber_proc<F: FnOnce()>(data: *mut c_void) {
             // This function is the entry point to our inner fiber, and as argument we get an
             // instance of `FiberInfo`. We will set-up the "runtime" for the callback and execute
             // it.
@@ -321,7 +321,6 @@ cfg_if! {
             // Restore to the previous Fiber
             set_stack_limit(old_stack_limit);
             SwitchToFiber(data.parent_fiber);
-            return;
         }
 
         fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
@@ -330,7 +329,7 @@ cfg_if! {
             // to it so we can use it's stack. After running `callback` within our fiber, we switch
             // back to the current stack and destroy the fiber and its associated stack.
             unsafe {
-                let was_fiber = IsThreadAFiber() == TRUE as BOOL;
+                let was_fiber = IsThreadAFiber() == 1 as BOOL;
                 let mut data = FiberInfo {
                     callback: std::mem::MaybeUninit::new(callback),
                     panic: None,
@@ -354,7 +353,7 @@ cfg_if! {
                 }
 
                 let fiber = CreateFiber(
-                    stack_size as SIZE_T,
+                    stack_size as usize,
                     Some(fiber_proc::<&mut dyn FnMut()>),
                     &mut data as *mut FiberInfo<&mut dyn FnMut()> as *mut _,
                 );
@@ -369,12 +368,11 @@ cfg_if! {
                 DeleteFiber(fiber);
 
                 // Clean-up.
-                if !was_fiber {
-                    if ConvertFiberToThread() == 0 {
+                if !was_fiber && ConvertFiberToThread() == 0 {
                         // FIXME: Perhaps should not panic here?
                         panic!("unable to convert back to thread: {}", io::Error::last_os_error());
-                    }
                 }
+
                 if let Some(p) = data.panic {
                     std::panic::resume_unwind(p);
                 }
@@ -408,12 +406,12 @@ cfg_if! {
             // to discover the size of the stack
             //
             // FIXME: we could read stack base from the TIB, specifically the 3rd element of it.
-            type QueryT = winapi::um::winnt::MEMORY_BASIC_INFORMATION;
+            type QueryT = windows_sys::Win32::System::Memory::MEMORY_BASIC_INFORMATION;
             let mut mi = std::mem::MaybeUninit::<QueryT>::uninit();
             VirtualQuery(
                 psm::stack_pointer() as *const _,
                 mi.as_mut_ptr(),
-                std::mem::size_of::<QueryT>() as SIZE_T,
+                std::mem::size_of::<QueryT>() as usize,
             );
             Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }

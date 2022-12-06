@@ -41,6 +41,7 @@ fn find_assembly(
         ("powerpc", _, _, _) => Some(("src/arch/powerpc32.s", true)),
         ("powerpc64", _, _, "musl") => Some(("src/arch/powerpc64_openpower.s", true)),
         ("powerpc64", "little", _, _) => Some(("src/arch/powerpc64_openpower.s", true)),
+        ("powerpc64", _, "aix", _) => Some(("src/arch/powerpc64_aix.s", true)),
         ("powerpc64", _, _, _) => Some(("src/arch/powerpc64.s", true)),
         ("s390x", _, _, _) => Some(("src/arch/zseries_linux.s", true)),
         ("mips", _, _, _) => Some(("src/arch/mips_eabi.s", true)),
