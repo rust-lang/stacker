@@ -24,6 +24,9 @@ fn find_assembly(
                 Some(("src/arch/x86_64_windows_gnu.s", false))
             }
         }
+        ("x86_64", _, "cygwin", _) => {
+            Some(("src/arch/x86_64_windows_gnu.s", false))
+        }
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
         ("aarch64", _, "windows", _) => {
             if masm {
