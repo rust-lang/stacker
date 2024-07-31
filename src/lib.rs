@@ -419,7 +419,7 @@ cfg_if! {
             assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
             Some(stackaddr as usize)
         }
-    } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly"))] {
+    } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
             assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);

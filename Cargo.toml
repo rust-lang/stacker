@@ -20,7 +20,7 @@ test = false
 
 [dependencies]
 cfg-if = "1.0.0"
-libc = "0.2.45"
+libc = "0.2.156"
 psm = { path = "psm", version = "0.1.7" }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
