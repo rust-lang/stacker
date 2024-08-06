@@ -231,7 +231,7 @@ psm_stack_manipulation! {
                 .expect("unreasonably large stack requested") / page_size;
             let stack_pages = std::cmp::max(1, requested_pages) + 2;
             let stack_bytes = stack_pages.checked_mul(page_size)
-                .expect("unreasonably large stack requesteed");
+                .expect("unreasonably large stack requested");
 
             // Next, there are a couple of approaches to how we allocate the new stack. We take the
             // most obvious path and use `mmap`. We also `mprotect` a guard page into our
