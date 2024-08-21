@@ -17,14 +17,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust_toolchain: [nightly, stable, 1.38.0]
+        rust_toolchain: [nightly, stable, 1.63.0]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         mode: ['--release', '-Zminimal-versions', '']
         manifest: ['psm/Cargo.toml', 'Cargo.toml']
         exclude:
           - rust_toolchain: stable
             mode: -Zminimal-versions
-          - rust_toolchain: 1.38.0
+          - rust_toolchain: 1.63.0
             mode: -Zminimal-versions
     timeout-minutes: 10
     steps:
@@ -136,10 +136,11 @@ jobs:
           - armv7-unknown-linux-gnueabihf
           - i686-unknown-linux-gnu
           - i686-unknown-linux-musl
-          - mips-unknown-linux-gnu
-          - mips64-unknown-linux-gnuabi64
-          - mips64el-unknown-linux-gnuabi64
-          - mipsel-unknown-linux-gnu
+          # No libstd available :(
+          # - mips-unknown-linux-gnu
+          # - mips64-unknown-linux-gnuabi64
+          # - mips64el-unknown-linux-gnuabi64
+          # - mipsel-unknown-linux-gnu
           - powerpc-unknown-linux-gnu
           # https://github.com/rust-embedded/cross/pull/440
           # - powerpc64-unknown-linux-gnu
@@ -324,7 +325,7 @@ jobs:
             default: true
             target: wasm32-wasi
       - run: |
-          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v0.19.0/wasmtime-v0.19.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
-          echo "${{ runner.tool_cache }}/wasmtime-v0.19.0-x86_64-linux" >> $GITHUB_PATH
+          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
+          echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
           echo "CARGO_TARGET_WASM32_WASI_RUNNER=wasmtime run --" >> $GITHUB_ENV
       - run: cargo test --target wasm32-wasi --all -- --nocapture
