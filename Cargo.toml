@@ -24,7 +24,7 @@ libc = "0.2.156"
 psm = { path = "psm", version = "0.1.7" }
 
 [target.'cfg(windows)'.dependencies.windows-sys]
-version = ">=0.34.0, <0.42.0"
+version = ">=0.52.0, <0.60.0"
 features = [
     "Win32_System_Memory",
     "Win32_System_Threading",
