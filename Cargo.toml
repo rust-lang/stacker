@@ -1,6 +1,7 @@
 [package]
 name = "stacker"
 version = "0.1.16"
+rust-version = "1.63"
 authors = ["Alex Crichton <alex@alexcrichton.com>", "Simonas Kazlauskas <stacker@kazlauskas.me>"]
 build = "build.rs"
 license = "MIT OR Apache-2.0"
