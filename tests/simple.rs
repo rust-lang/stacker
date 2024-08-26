@@ -13,6 +13,7 @@ fn recurse(n: usize) {
     if n != 0 {
         ensure_sufficient_stack(|| recurse(n - 1));
     }
+    #[allow(dropping_copy_types)]
     drop(x);
 }
 
