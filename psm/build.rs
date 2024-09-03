@@ -7,7 +7,7 @@ fn find_assembly(
     env: &str,
     masm: bool,
 ) -> Option<(&'static str, bool)> {
-    println!("cargo::rustc-check-cfg=cfg(switchable_stack,asm,link_asm)");
+    println!("cargo:rustc-check-cfg=cfg(switchable_stack,asm,link_asm)");
     match (arch, endian, os, env) {
         // The implementations for stack switching exist, but, officially, doing so without Fibers
         // is not supported in Windows. For x86_64 the implementation actually works locally,

@@ -1,6 +1,6 @@
 [package]
 name = "psm"
-version = "0.1.22"
+version = "0.1.23"
 authors = ["Simonas Kazlauskas <psm@kazlauskas.me>"]
 build = "build.rs"
 description = "Portable Stack Manipulation: stack manipulation and introspection routines"
