@@ -3,12 +3,13 @@ name: Test
 on:
   push:
     branches:
-    - master
+      - master
     paths-ignore:
-    - '*.mkd'
-    - 'LICENSE'
+      - '*.mkd'
+      - 'LICENSE'
   pull_request:
     types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 jobs:
   native-test:
@@ -32,9 +33,9 @@ jobs:
       - name: Install Rust ${{ matrix.rust_toolchain }}
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: ${{ matrix.rust_toolchain }}
-            profile: minimal
-            default: true
+          toolchain: ${{ matrix.rust_toolchain }}
+          profile: minimal
+          default: true
       - name: Test ${{ matrix.manifest}} with ${{ matrix.mode }}
         uses: actions-rs/cargo@v1
         with:
@@ -71,10 +72,10 @@ jobs:
           install: ${{ matrix.package }}
       - uses: actions-rs/toolchain@v1
         with:
-            toolchain: stable
-            profile: minimal
-            default: true
-            target: ${{ matrix.rust_target }}
+          toolchain: stable
+          profile: minimal
+          default: true
+          target: ${{ matrix.rust_target }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -111,10 +112,10 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: ${{ matrix.rust_toolchain }}
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: ${{ matrix.rust_toolchain }}
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -153,16 +154,16 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: nightly
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
+      - name: Install cross
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: test
-          args: --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}  ${{ matrix.mode }} -- --test-threads=1 --nocapture
+        run: |
+          cross test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}  ${{ matrix.mode }} -- --test-threads=1 --nocapture
 
   native-build:
     name: Build ${{ matrix.manifest }} to ${{ matrix.rust_target }} on nightly
@@ -181,10 +182,10 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: nightly
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
       - name: Build ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
@@ -220,10 +221,10 @@ jobs:
       - name: Install Rust nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: nightly
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
       - name: Build ${{ matrix.rust_target }}
         uses: actions-rs/cargo@v1
         with:
@@ -248,10 +249,10 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: ${{ matrix.rust_toolchain }}
-            profile: minimal
-            target: ${{ matrix.rust_target }}
-            default: true
+          toolchain: ${{ matrix.rust_toolchain }}
+          profile: minimal
+          target: ${{ matrix.rust_target }}
+          default: true
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -268,7 +269,7 @@ jobs:
           - x86_64-pc-windows-msvc
           - i686-pc-windows-msvc
         manifest: ['psm/Cargo.toml', 'Cargo.toml']
-        xwin_version: ["0.1.6"]
+        xwin_version: ['0.1.6']
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
@@ -297,17 +298,17 @@ jobs:
           xwin --accept-license 1 splat --output /tmp/xwin
       - name: Test
         env:
-          CC: "clang-cl"
-          CXX: "clang-cl"
-          AR: "llvm-lib"
-          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: "lld-link"
-          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: "lld-link"
+          CC: 'clang-cl'
+          CXX: 'clang-cl'
+          AR: 'llvm-lib'
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: 'lld-link'
+          CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER: 'lld-link'
           # Note that we only disable unused-command-line-argument here since clang-cl
           # doesn't implement all of the options supported by cl, but the ones it doesn't
           # are _generally_ not interesting.
-          CFLAGS: "-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared"
+          CFLAGS: '-Wno-unused-command-line-argument -fuse-ld=lld-link /imsvc/tmp/xwin/crt/include /imsvc/tmp/xwin/sdk/include/ucrt /imsvc/tmp/xwin/sdk/include/um /imsvc/tmp/xwin/sdk/include/shared'
           # Inform the linker where to search for libraries
-          RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
+          RUSTFLAGS: '-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64'
         run: |
           set -eux
           cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
@@ -321,9 +322,9 @@ jobs:
       - name: Install Rust nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            default: true
-            target: wasm32-wasi
+          toolchain: nightly
+          default: true
+          target: wasm32-wasi
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
           echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
