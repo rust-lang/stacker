@@ -14,8 +14,7 @@
 #define GLOBL(fnname) .globl fnname
 #define TYPE(fnname)
 #define FUNCTION(fnname) fnname
-#define LABEL_FOR_SIZE(endlabel)
-#define SIZE(fnname,endlabel)
+#define END_FUNCTION(fnname)
 
 #else
 
