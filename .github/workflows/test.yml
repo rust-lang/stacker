@@ -361,9 +361,9 @@ jobs:
         with:
           toolchain: nightly
           default: true
-          target: wasm32-wasi
+          target: wasm32-wasip1
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
           echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
-          echo "CARGO_TARGET_WASM32_WASI_RUNNER=wasmtime run --" >> $GITHUB_ENV
-      - run: cargo test --target wasm32-wasi --all -- --nocapture
+          echo "CARGO_TARGET_WASM32_WASIP1_RUNNER=wasmtime run --" >> $GITHUB_ENV
+      - run: cargo test --target wasm32-wasip1 --all -- --nocapture
