@@ -1,5 +1,3 @@
-extern crate cc;
-
 fn find_assembly(
     arch: &str,
     endian: &str,
