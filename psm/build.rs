@@ -5,7 +5,6 @@ fn find_assembly(
     env: &str,
     masm: bool,
 ) -> Option<(&'static str, bool)> {
-    println!("cargo:rustc-check-cfg=cfg(switchable_stack,asm,link_asm)");
     match (arch, endian, os, env) {
         // The implementations for stack switching exist, but, officially, doing so without Fibers
         // is not supported in Windows. For x86_64 the implementation actually works locally,
@@ -57,6 +56,13 @@ fn find_assembly(
 
 fn main() {
     use std::env::var;
+
+    println!("cargo:rustc-check-cfg=cfg(switchable_stack,asm,link_asm)");
+
+    if var("CARGO_CFG_MIRI").is_ok() {
+        // Miri doesn't have a stack limit and the inline asm wouldn't work on miri anyway.
+        return;
+    }
 
     let arch = var("CARGO_CFG_TARGET_ARCH").unwrap();
     let env = var("CARGO_CFG_TARGET_ENV").unwrap();
