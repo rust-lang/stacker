@@ -268,14 +268,20 @@ psm_stack_manipulation! {
     no {
         #[cfg(not(windows))]
         fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
-            drop(stack_size);
+            let _ = stack_size;
             callback();
         }
     }
 }
 
 cfg_if! {
-    if #[cfg(windows)] {
+    if #[cfg(miri)] {
+        // Miri doesn't have a stack limit
+        #[inline(always)]
+        unsafe fn guess_os_stack_limit() -> Option<usize> {
+            None
+        }
+    } else if #[cfg(windows)] {
         use std::ptr;
         use std::io;
         use libc::c_void;
