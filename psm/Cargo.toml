@@ -1,6 +1,6 @@
 [package]
 name = "psm"
-version = "0.1.24"
+version = "0.1.25"
 edition = "2021"
 authors = ["Simonas Kazlauskas <psm@kazlauskas.me>"]
 build = "build.rs"
@@ -8,7 +8,7 @@ description = "Portable Stack Manipulation: stack manipulation and introspection
 keywords = ["stack", "no_std"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rust-lang/stacker/"
-documentation = "https://docs.rs/psm/0.1.24"
+documentation = "https://docs.rs/psm/0.1.25"
 readme = "README.mkd"
 
 [dependencies]
