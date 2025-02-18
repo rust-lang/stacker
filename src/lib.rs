@@ -419,34 +419,41 @@ cfg_if! {
             }
         }
 
+        unsafe fn handle_pthread_err(attr: *mut libc::pthread_attr_t, ret: libc::c_int) -> Option<()> {
+            if ret != 0 {
+                destroy_pthread_attr(attr);
+                None
+            } else {
+                Some(())
+            }
+        }
+
         unsafe fn guess_os_stack_limit() -> Option<usize> {
+            // Initialize pthread attributes structure
             let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
             if libc::pthread_attr_init(attr.as_mut_ptr()) != 0 {
                 return None;
             }
 
-            let success = {
-                #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))]
-                let res = libc::pthread_getattr_np(libc::pthread_self(), attr.as_mut_ptr());
-                #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))]
-                let res = libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr());
+            let pthread_ctx = attr.as_mut_ptr();
 
-                res == 0
-            };
+            // Linux and BSD use different functions to get attributes of created thread
+            #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))]
+            let get_attr = libc::pthread_getattr_np;
+            #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))]
+            let get_attr = libc::pthread_attr_get_np;
 
-            if !success {
-                destroy_pthread_attr(attr.as_mut_ptr());
-                return None;
-            }
+            // Get current thread's attributes
+            handle_pthread_err(pthread_ctx,
+                get_attr(libc::pthread_self(), pthread_ctx))?;
 
+            // Get the stack address and size from attributes
             let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
-            if libc::pthread_attr_getstack(attr.as_ptr(), &mut stackaddr, &mut stacksize) != 0 {
-                destroy_pthread_attr(attr.as_mut_ptr());
-                return None;
-            }
+            handle_pthread_err(pthread_ctx,
+                libc::pthread_attr_getstack(pthread_ctx, &mut stackaddr, &mut stacksize))?;
 
-            destroy_pthread_attr(attr.as_mut_ptr());
+            destroy_pthread_attr(pthread_ctx);
             Some(stackaddr as usize)
         }
     } else if #[cfg(target_os = "openbsd")] {
