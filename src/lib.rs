@@ -163,10 +163,7 @@ psm_stack_manipulation! {
                     -1, // Some implementations assert fd = -1 if MAP_ANON is specified
                     0
                 );
-                if new_stack == libc::MAP_FAILED {
-                    let error = std::io::Error::last_os_error();
-                    panic!("allocating stack failed with: {}", error)
-                }
+                assert_ne!(new_stack, libc::MAP_FAILED, "mmap failed to allocate stack: {}", std::io::Error::last_os_error());
                 let guard = StackRestoreGuard {
                     new_stack,
                     stack_bytes,
@@ -191,11 +188,7 @@ psm_stack_manipulation! {
                 } else {
                     -1
                 };
-                if result == -1 {
-                    let error = std::io::Error::last_os_error();
-                    drop(guard);
-                    panic!("setting stack permissions failed with: {}", error)
-                }
+                assert_ne!(result, -1, "mprotect/mmap failed: {}", std::io::Error::last_os_error());
                 guard
             }
         }
@@ -222,7 +215,7 @@ psm_stack_manipulation! {
         fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             // Calculate a number of pages we want to allocate for the new stack.
             // For maximum portability we want to produce a stack that is aligned to a page and has
-            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
+            // a size that's a multiple of page size. Furthermore we want to allocate two extras pages
             // for the stack guard. To achieve that we do our calculations in number of pages and
             // convert to bytes last.
             let page_size = page_size();
@@ -412,30 +405,51 @@ cfg_if! {
             Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }
     } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
+        unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
+            let ret = libc::pthread_attr_destroy(attr);
+            assert!(ret == 0, "pthread_attr_destroy failed with error code: {}", ret);
+        }
+
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
-            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
-            assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
-                                                attr.as_mut_ptr()), 0);
+            if libc::pthread_attr_init(attr.as_mut_ptr()) != 0 {
+                return None;
+            }
+            if libc::pthread_getattr_np(libc::pthread_self(), attr.as_mut_ptr()) != 0 {
+                destroy_pthread_attr(attr.as_mut_ptr());
+                return None;
+            }
             let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
-            assert_eq!(libc::pthread_attr_getstack(
-                attr.as_ptr(), &mut stackaddr, &mut stacksize
-            ), 0);
-            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
+            if libc::pthread_attr_getstack(attr.as_ptr(), &mut stackaddr, &mut stacksize) != 0 {
+                destroy_pthread_attr(attr.as_mut_ptr());
+                return None;
+            }
+            destroy_pthread_attr(attr.as_mut_ptr());
             Some(stackaddr as usize)
         }
     } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
+        unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
+            let ret = libc::pthread_attr_destroy(attr);
+            assert!(ret == 0, "pthread_attr_destroy failed with error code: {}", ret);
+        }
+
         unsafe fn guess_os_stack_limit() -> Option<usize> {
             let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
-            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
-            assert_eq!(libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr()), 0);
+            if libc::pthread_attr_init(attr.as_mut_ptr()) != 0 {
+                return None;
+            }
+            if libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr()) != 0 {
+                destroy_pthread_attr(attr.as_mut_ptr());
+                return None;
+            }
             let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
-            assert_eq!(libc::pthread_attr_getstack(
-                attr.as_ptr(), &mut stackaddr, &mut stacksize
-            ), 0);
-            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
+            if libc::pthread_attr_getstack(attr.as_ptr(), &mut stackaddr, &mut stacksize) != 0 {
+                destroy_pthread_attr(attr.as_mut_ptr());
+                return None;
+            }
+            destroy_pthread_attr(attr.as_mut_ptr());
             Some(stackaddr as usize)
         }
     } else if #[cfg(target_os = "openbsd")] {
