@@ -404,7 +404,14 @@ cfg_if! {
             );
             Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
         }
-    } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
+    } else if #[cfg(any(
+        target_os = "linux",
+        target_os = "solaris",
+        target_os = "netbsd",
+        target_os = "freebsd",
+        target_os = "dragonfly",
+        target_os = "illumos"
+    ))] {
         unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
             let ret = libc::pthread_attr_destroy(attr);
             if ret != 0 {
@@ -417,42 +424,28 @@ cfg_if! {
             if libc::pthread_attr_init(attr.as_mut_ptr()) != 0 {
                 return None;
             }
-            if libc::pthread_getattr_np(libc::pthread_self(), attr.as_mut_ptr()) != 0 {
-                destroy_pthread_attr(attr.as_mut_ptr());
-                return None;
-            }
-            let mut stackaddr = std::ptr::null_mut();
-            let mut stacksize = 0;
-            if libc::pthread_attr_getstack(attr.as_ptr(), &mut stackaddr, &mut stacksize) != 0 {
-                destroy_pthread_attr(attr.as_mut_ptr());
-                return None;
-            }
-            destroy_pthread_attr(attr.as_mut_ptr());
-            Some(stackaddr as usize)
-        }
-    } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
-        unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
-            let ret = libc::pthread_attr_destroy(attr);
-            if ret != 0 {
-                panic!("pthread_attr_destroy failed with error code {}: {}", ret, std::io::Error::last_os_error());
-            }
-        }
 
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
-            if libc::pthread_attr_init(attr.as_mut_ptr()) != 0 {
-                return None;
-            }
-            if libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr()) != 0 {
+            let success = {
+                #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))]
+                let res = libc::pthread_getattr_np(libc::pthread_self(), attr.as_mut_ptr());
+                #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))]
+                let res = libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr());
+
+                res == 0
+            };
+
+            if !success {
                 destroy_pthread_attr(attr.as_mut_ptr());
                 return None;
             }
+
             let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
             if libc::pthread_attr_getstack(attr.as_ptr(), &mut stackaddr, &mut stacksize) != 0 {
                 destroy_pthread_attr(attr.as_mut_ptr());
                 return None;
             }
+
             destroy_pthread_attr(attr.as_mut_ptr());
             Some(stackaddr as usize)
         }
