@@ -407,7 +407,9 @@ cfg_if! {
     } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
         unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
             let ret = libc::pthread_attr_destroy(attr);
-            assert!(ret == 0, "pthread_attr_destroy failed with error code: {}", ret);
+            if ret != 0 {
+                panic!("pthread_attr_destroy failed with error code {}: {}", ret, std::io::Error::last_os_error());
+            }
         }
 
         unsafe fn guess_os_stack_limit() -> Option<usize> {
@@ -431,7 +433,9 @@ cfg_if! {
     } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
         unsafe fn destroy_pthread_attr(attr: *mut libc::pthread_attr_t) {
             let ret = libc::pthread_attr_destroy(attr);
-            assert!(ret == 0, "pthread_attr_destroy failed with error code: {}", ret);
+            if ret != 0 {
+                panic!("pthread_attr_destroy failed with error code {}: {}", ret, std::io::Error::last_os_error());
+            }
         }
 
         unsafe fn guess_os_stack_limit() -> Option<usize> {
