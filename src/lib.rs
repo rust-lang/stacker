@@ -422,10 +422,9 @@ cfg_if! {
         unsafe fn handle_pthread_err(attr: *mut libc::pthread_attr_t, ret: libc::c_int) -> Option<()> {
             if ret != 0 {
                 destroy_pthread_attr(attr);
-                None
-            } else {
-                Some(())
+                return None;
             }
+            Some(())
         }
 
         unsafe fn guess_os_stack_limit() -> Option<usize> {
@@ -438,20 +437,23 @@ cfg_if! {
             let pthread_ctx = attr.as_mut_ptr();
 
             // Linux and BSD use different functions to get attributes of created thread
-            #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))]
-            let get_attr = libc::pthread_getattr_np;
-            #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))]
-            let get_attr = libc::pthread_attr_get_np;
+            cfg_if! {
+                if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
+                    let get_attr = libc::pthread_attr_get_np;
+                } else {
+                    let get_attr = libc::pthread_getattr_np;
+                }
+            };
 
             // Get current thread's attributes
-            handle_pthread_err(pthread_ctx,
-                get_attr(libc::pthread_self(), pthread_ctx))?;
+            let res = get_attr(libc::pthread_self(), pthread_ctx);
+            handle_pthread_err(pthread_ctx, res)?;
 
             // Get the stack address and size from attributes
             let mut stackaddr = std::ptr::null_mut();
             let mut stacksize = 0;
-            handle_pthread_err(pthread_ctx,
-                libc::pthread_attr_getstack(pthread_ctx, &mut stackaddr, &mut stacksize))?;
+            let res = libc::pthread_attr_getstack(pthread_ctx, &mut stackaddr, &mut stacksize);
+            handle_pthread_err(pthread_ctx, res)?;
 
             destroy_pthread_attr(pthread_ctx);
             Some(stackaddr as usize)
