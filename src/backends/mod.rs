@@ -14,7 +14,6 @@ cfg_if! {
         target_os = "illumos"
     ))] {
         mod unix;
-        mod unix_pthread_wrapper;
         pub use unix::guess_os_stack_limit;
     } else if #[cfg(target_os = "openbsd")] {
         mod openbsd;
