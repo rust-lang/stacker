@@ -24,7 +24,7 @@ impl PthreadAttr {
         Some(PthreadAttr(attr))
     }
 
-    pub unsafe fn handle_pthread_err(&self, ret: libc::c_int) -> Option<()> {
+    pub fn handle_pthread_err(&self, ret: libc::c_int) -> Option<()> {
         if ret != 0 {
             return None;
         }
