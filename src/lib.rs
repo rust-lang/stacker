@@ -163,7 +163,12 @@ psm_stack_manipulation! {
                     -1, // Some implementations assert fd = -1 if MAP_ANON is specified
                     0
                 );
-                assert_ne!(new_stack, libc::MAP_FAILED, "mmap failed to allocate stack: {}", std::io::Error::last_os_error());
+                assert_ne!(
+                    new_stack,
+                    libc::MAP_FAILED,
+                    "mmap failed to allocate stack: {}",
+                    std::io::Error::last_os_error()
+                );
                 let guard = StackRestoreGuard {
                     new_stack,
                     stack_bytes,
