@@ -195,7 +195,12 @@ psm_stack_manipulation! {
                 } else {
                     -1
                 };
-                assert_ne!(result, -1, "mprotect/mmap failed: {}", std::io::Error::last_os_error());
+                assert_ne!(
+                    result,
+                    -1,
+                    "mprotect/mmap failed: {}",
+                    std::io::Error::last_os_error()
+                );
                 guard
             }
         }
