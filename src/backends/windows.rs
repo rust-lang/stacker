@@ -99,7 +99,7 @@ pub fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
 }
 
 #[inline(always)]
-fn get_thread_stack_guarantee() -> usize {
+fn get_thread_stack_guarantee() -> Option<usize> {
     let min_guarantee = if cfg!(target_pointer_width = "32") {
         0x1000
     } else {
@@ -114,9 +114,12 @@ fn get_thread_stack_guarantee() -> usize {
         // some further logic to calculate the real stack
         // guarantee. This logic is what is used on x86-32 and
         // x86-64 Windows 10. Other versions and platforms may differ
-        SetThreadStackGuarantee(&mut stack_guarantee)
+        let ret = SetThreadStackGuarantee(&mut stack_guarantee);
+        if ret == 0 {
+            return None;
+        }
     };
-    std::cmp::max(stack_guarantee, min_guarantee) as usize + 0x1000
+    Some(std::cmp::max(stack_guarantee, min_guarantee) as usize + 0x1000)
 }
 
 #[inline(always)]
@@ -135,5 +138,5 @@ pub unsafe fn guess_os_stack_limit() -> Option<usize> {
     if res == 0 {
         return None;
     }
-    Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
+    Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee()? + 0x1000)
 }
