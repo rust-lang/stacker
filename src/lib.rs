@@ -32,7 +32,7 @@ extern crate windows_sys;
 #[macro_use]
 extern crate psm;
 
-mod guess_os_stack_limit;
+mod backends;
 
 use std::cell::Cell;
 
@@ -118,7 +118,7 @@ psm_stack_information!(
 
 thread_local! {
     static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
-        guess_os_stack_limit::guess_os_stack_limit()
+        backends::guess_os_stack_limit()
     })
 }
 
@@ -276,5 +276,7 @@ psm_stack_manipulation! {
             let _ = stack_size;
             callback();
         }
+        #[cfg(windows)]
+        use backends::windows::_grow;
     }
 }

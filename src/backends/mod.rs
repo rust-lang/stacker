@@ -3,7 +3,7 @@ cfg_if! {
         mod fallback;
         pub use fallback::guess_os_stack_limit;
     } else if #[cfg(windows)] {
-        mod windows;
+        pub(crate) mod windows;
         pub use windows::guess_os_stack_limit;
     } else if #[cfg(any(
         target_os = "linux",
