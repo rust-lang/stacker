@@ -127,10 +127,13 @@ pub unsafe fn guess_os_stack_limit() -> Option<usize> {
     // FIXME: we could read stack base from the TIB, specifically the 3rd element of it.
     type QueryT = windows_sys::Win32::System::Memory::MEMORY_BASIC_INFORMATION;
     let mut mi = std::mem::MaybeUninit::<QueryT>::uninit();
-    VirtualQuery(
+    let res = VirtualQuery(
         psm::stack_pointer() as *const _,
         mi.as_mut_ptr(),
         std::mem::size_of::<QueryT>() as usize,
     );
+    if res == 0 {
+        return None;
+    }
     Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
 }
