@@ -222,7 +222,7 @@ psm_stack_manipulation! {
         fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             // Calculate a number of pages we want to allocate for the new stack.
             // For maximum portability we want to produce a stack that is aligned to a page and has
-            // a size that's a multiple of page size. Furthermore we want to allocate two extras pages
+            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
             // for the stack guard. To achieve that we do our calculations in number of pages and
             // convert to bytes last.
             let page_size = page_size();
