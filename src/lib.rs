@@ -32,6 +32,8 @@ extern crate windows_sys;
 #[macro_use]
 extern crate psm;
 
+mod backends;
+
 use std::cell::Cell;
 
 /// Grows the call stack if necessary.
@@ -116,7 +118,7 @@ psm_stack_information!(
 
 thread_local! {
     static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
-        guess_os_stack_limit()
+        backends::guess_os_stack_limit()
     })
 }
 
@@ -163,10 +165,12 @@ psm_stack_manipulation! {
                     -1, // Some implementations assert fd = -1 if MAP_ANON is specified
                     0
                 );
-                if new_stack == libc::MAP_FAILED {
-                    let error = std::io::Error::last_os_error();
-                    panic!("allocating stack failed with: {}", error)
-                }
+                assert_ne!(
+                    new_stack,
+                    libc::MAP_FAILED,
+                    "mmap failed to allocate stack: {}",
+                    std::io::Error::last_os_error()
+                );
                 let guard = StackRestoreGuard {
                     new_stack,
                     stack_bytes,
@@ -191,11 +195,12 @@ psm_stack_manipulation! {
                 } else {
                     -1
                 };
-                if result == -1 {
-                    let error = std::io::Error::last_os_error();
-                    drop(guard);
-                    panic!("setting stack permissions failed with: {}", error)
-                }
+                assert_ne!(
+                    result,
+                    -1,
+                    "mprotect/mmap failed: {}",
+                    std::io::Error::last_os_error()
+                );
                 guard
             }
         }
@@ -271,191 +276,7 @@ psm_stack_manipulation! {
             let _ = stack_size;
             callback();
         }
-    }
-}
-
-cfg_if! {
-    if #[cfg(miri)] {
-        // Miri doesn't have a stack limit
-        #[inline(always)]
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            None
-        }
-    } else if #[cfg(windows)] {
-        use std::ptr;
-        use std::io;
-        use libc::c_void;
-        use windows_sys::Win32::System::Threading::{SwitchToFiber, IsThreadAFiber, ConvertThreadToFiber,
-            CreateFiber, DeleteFiber, ConvertFiberToThread, SetThreadStackGuarantee
-        };
-        use windows_sys::Win32::Foundation::BOOL;
-        use windows_sys::Win32::System::Memory::VirtualQuery;
-
-        // Make sure the libstacker.a (implemented in C) is linked.
-        // See https://github.com/rust-lang/rust/issues/65610
-        #[link(name="stacker")]
-        extern {
-            fn __stacker_get_current_fiber() -> *mut c_void;
-        }
-
-        struct FiberInfo<F> {
-            callback: std::mem::MaybeUninit<F>,
-            panic: Option<Box<dyn std::any::Any + Send + 'static>>,
-            parent_fiber: *mut c_void,
-        }
-
-        unsafe extern "system" fn fiber_proc<F: FnOnce()>(data: *mut c_void) {
-            // This function is the entry point to our inner fiber, and as argument we get an
-            // instance of `FiberInfo`. We will set-up the "runtime" for the callback and execute
-            // it.
-            let data = &mut *(data as *mut FiberInfo<F>);
-            let old_stack_limit = get_stack_limit();
-            set_stack_limit(guess_os_stack_limit());
-            let callback = data.callback.as_ptr();
-            data.panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback.read())).err();
-
-            // Restore to the previous Fiber
-            set_stack_limit(old_stack_limit);
-            SwitchToFiber(data.parent_fiber);
-        }
-
-        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
-            // Fibers (or stackful coroutines) is the only official way to create new stacks on the
-            // same thread on Windows. So in order to extend the stack we create fiber and switch
-            // to it so we can use it's stack. After running `callback` within our fiber, we switch
-            // back to the current stack and destroy the fiber and its associated stack.
-            unsafe {
-                let was_fiber = IsThreadAFiber() == 1 as BOOL;
-                let mut data = FiberInfo {
-                    callback: std::mem::MaybeUninit::new(callback),
-                    panic: None,
-                    parent_fiber: {
-                        if was_fiber {
-                            // Get a handle to the current fiber. We need to use a C implementation
-                            // for this as GetCurrentFiber is an header only function.
-                            __stacker_get_current_fiber()
-                        } else {
-                            // Convert the current thread to a fiber, so we are able to switch back
-                            // to the current stack. Threads coverted to fibers still act like
-                            // regular threads, but they have associated fiber data. We later
-                            // convert it back to a regular thread and free the fiber data.
-                            ConvertThreadToFiber(ptr::null_mut())
-                        }
-                    },
-                };
-
-                if data.parent_fiber.is_null() {
-                    panic!("unable to convert thread to fiber: {}", io::Error::last_os_error());
-                }
-
-                let fiber = CreateFiber(
-                    stack_size as usize,
-                    Some(fiber_proc::<&mut dyn FnMut()>),
-                    &mut data as *mut FiberInfo<&mut dyn FnMut()> as *mut _,
-                );
-                if fiber.is_null() {
-                    panic!("unable to allocate fiber: {}", io::Error::last_os_error());
-                }
-
-                // Switch to the fiber we created. This changes stacks and starts executing
-                // fiber_proc on it. fiber_proc will run `callback` and then switch back to run the
-                // next statement.
-                SwitchToFiber(fiber);
-                DeleteFiber(fiber);
-
-                // Clean-up.
-                if !was_fiber && ConvertFiberToThread() == 0 {
-                        // FIXME: Perhaps should not panic here?
-                        panic!("unable to convert back to thread: {}", io::Error::last_os_error());
-                }
-
-                if let Some(p) = data.panic {
-                    std::panic::resume_unwind(p);
-                }
-            }
-        }
-
-        #[inline(always)]
-        fn get_thread_stack_guarantee() -> usize {
-            let min_guarantee = if cfg!(target_pointer_width = "32") {
-                0x1000
-            } else {
-                0x2000
-            };
-            let mut stack_guarantee = 0;
-            unsafe {
-                // Read the current thread stack guarantee
-                // This is the stack reserved for stack overflow
-                // exception handling.
-                // This doesn't return the true value so we need
-                // some further logic to calculate the real stack
-                // guarantee. This logic is what is used on x86-32 and
-                // x86-64 Windows 10. Other versions and platforms may differ
-                SetThreadStackGuarantee(&mut stack_guarantee)
-            };
-            std::cmp::max(stack_guarantee, min_guarantee) as usize + 0x1000
-        }
-
-        #[inline(always)]
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            // Query the allocation which contains our stack pointer in order
-            // to discover the size of the stack
-            //
-            // FIXME: we could read stack base from the TIB, specifically the 3rd element of it.
-            type QueryT = windows_sys::Win32::System::Memory::MEMORY_BASIC_INFORMATION;
-            let mut mi = std::mem::MaybeUninit::<QueryT>::uninit();
-            VirtualQuery(
-                psm::stack_pointer() as *const _,
-                mi.as_mut_ptr(),
-                std::mem::size_of::<QueryT>() as usize,
-            );
-            Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee() + 0x1000)
-        }
-    } else if #[cfg(any(target_os = "linux", target_os="solaris", target_os = "netbsd"))] {
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
-            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
-            assert_eq!(libc::pthread_getattr_np(libc::pthread_self(),
-                                                attr.as_mut_ptr()), 0);
-            let mut stackaddr = std::ptr::null_mut();
-            let mut stacksize = 0;
-            assert_eq!(libc::pthread_attr_getstack(
-                attr.as_ptr(), &mut stackaddr, &mut stacksize
-            ), 0);
-            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
-            Some(stackaddr as usize)
-        }
-    } else if #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))] {
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut attr = std::mem::MaybeUninit::<libc::pthread_attr_t>::uninit();
-            assert_eq!(libc::pthread_attr_init(attr.as_mut_ptr()), 0);
-            assert_eq!(libc::pthread_attr_get_np(libc::pthread_self(), attr.as_mut_ptr()), 0);
-            let mut stackaddr = std::ptr::null_mut();
-            let mut stacksize = 0;
-            assert_eq!(libc::pthread_attr_getstack(
-                attr.as_ptr(), &mut stackaddr, &mut stacksize
-            ), 0);
-            assert_eq!(libc::pthread_attr_destroy(attr.as_mut_ptr()), 0);
-            Some(stackaddr as usize)
-        }
-    } else if #[cfg(target_os = "openbsd")] {
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            let mut stackinfo = std::mem::MaybeUninit::<libc::stack_t>::uninit();
-            assert_eq!(libc::pthread_stackseg_np(libc::pthread_self(), stackinfo.as_mut_ptr()), 0);
-            Some(stackinfo.assume_init().ss_sp as usize - stackinfo.assume_init().ss_size)
-        }
-    } else if #[cfg(target_os = "macos")] {
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            Some(libc::pthread_get_stackaddr_np(libc::pthread_self()) as usize -
-                libc::pthread_get_stacksize_np(libc::pthread_self()) as usize)
-        }
-    } else {
-        // fallback for other platforms is to always increase the stack if we're on
-        // the root stack. After we increased the stack once, we know the new stack
-        // size and don't need this pessimization anymore
-        #[inline(always)]
-        unsafe fn guess_os_stack_limit() -> Option<usize> {
-            None
-        }
+        #[cfg(windows)]
+        use backends::windows::_grow;
     }
 }
