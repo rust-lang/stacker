@@ -4,5 +4,6 @@ pub unsafe fn guess_os_stack_limit() -> Option<usize> {
     if res != 0 {
         return None;
     }
-    Some(stackinfo.assume_init().ss_sp as usize - stackinfo.assume_init().ss_size)
+    let stackinfo = stackinfo.assume_init();
+    Some(stackinfo.ss_sp as usize - stackinfo.ss_size)
 }
