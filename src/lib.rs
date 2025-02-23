@@ -142,7 +142,7 @@ psm_stack_manipulation! {
         }
 
         impl StackRestoreGuard {
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
             unsafe fn new(stack_bytes: usize, _page_size: usize) -> StackRestoreGuard {
                 let layout = std::alloc::Layout::from_size_align(stack_bytes, 16).unwrap();
                 let ptr = std::alloc::alloc(layout);
@@ -154,7 +154,7 @@ psm_stack_manipulation! {
                 }
             }
 
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
             unsafe fn new(stack_bytes: usize, page_size: usize) -> StackRestoreGuard {
                 let new_stack = libc::mmap(
                     std::ptr::null_mut(),
@@ -207,14 +207,14 @@ psm_stack_manipulation! {
 
         impl Drop for StackRestoreGuard {
             fn drop(&mut self) {
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
                 unsafe {
                     std::alloc::dealloc(
                         self.new_stack as *mut u8,
                         std::alloc::Layout::from_size_align_unchecked(self.stack_bytes, 16),
                     );
                 }
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
                 unsafe {
                     // FIXME: check the error code and decide what to do with it.
                     // Perhaps a debug_assertion?
@@ -263,9 +263,9 @@ psm_stack_manipulation! {
 
         fn page_size() -> usize {
             // FIXME: consider caching the page size.
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
             unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) as usize }
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
             { 65536 }
         }
     }
