@@ -135,123 +135,30 @@ fn set_stack_limit(l: Option<usize>) {
 
 psm_stack_manipulation! {
     yes {
-        struct StackRestoreGuard {
-            new_stack: *mut std::ffi::c_void,
-            stack_bytes: usize,
-            old_stack_limit: Option<usize>,
-        }
+        #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
+        #[path = "mmap_stack_restore_guard.rs"]
+        mod stack_restore_guard;
 
-        impl StackRestoreGuard {
-            #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
-            unsafe fn new(stack_bytes: usize, _page_size: usize) -> StackRestoreGuard {
-                let layout = std::alloc::Layout::from_size_align(stack_bytes, 16).unwrap();
-                let ptr = std::alloc::alloc(layout);
-                assert!(!ptr.is_null(), "unable to allocate stack");
-                StackRestoreGuard {
-                    new_stack: ptr as *mut _,
-                    stack_bytes,
-                    old_stack_limit: get_stack_limit(),
-                }
-            }
+        #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
+        #[path = "alloc_stack_restore_guard.rs"]
+        mod stack_restore_guard;
 
-            #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
-            unsafe fn new(stack_bytes: usize, page_size: usize) -> StackRestoreGuard {
-                let new_stack = libc::mmap(
-                    std::ptr::null_mut(),
-                    stack_bytes,
-                    libc::PROT_NONE,
-                    libc::MAP_PRIVATE |
-                    libc::MAP_ANON,
-                    -1, // Some implementations assert fd = -1 if MAP_ANON is specified
-                    0
-                );
-                assert_ne!(
-                    new_stack,
-                    libc::MAP_FAILED,
-                    "mmap failed to allocate stack: {}",
-                    std::io::Error::last_os_error()
-                );
-                let guard = StackRestoreGuard {
-                    new_stack,
-                    stack_bytes,
-                    old_stack_limit: get_stack_limit(),
-                };
-                let above_guard_page = new_stack.add(page_size);
-                #[cfg(not(target_os = "openbsd"))]
-                let result = libc::mprotect(
-                    above_guard_page,
-                    stack_bytes - page_size,
-                    libc::PROT_READ | libc::PROT_WRITE
-                );
-                #[cfg(target_os = "openbsd")]
-                let result = if libc::mmap(
-                        above_guard_page,
-                        stack_bytes - page_size,
-                        libc::PROT_READ | libc::PROT_WRITE,
-                        libc::MAP_FIXED | libc::MAP_PRIVATE | libc::MAP_ANON | libc::MAP_STACK,
-                        -1,
-                        0) == above_guard_page {
-                    0
-                } else {
-                    -1
-                };
-                assert_ne!(
-                    result,
-                    -1,
-                    "mprotect/mmap failed: {}",
-                    std::io::Error::last_os_error()
-                );
-                guard
-            }
-        }
+        use stack_restore_guard::StackRestoreGuard;
 
-        impl Drop for StackRestoreGuard {
-            fn drop(&mut self) {
-                #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
-                unsafe {
-                    std::alloc::dealloc(
-                        self.new_stack as *mut u8,
-                        std::alloc::Layout::from_size_align_unchecked(self.stack_bytes, 16),
-                    );
-                }
-                #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
-                unsafe {
-                    // FIXME: check the error code and decide what to do with it.
-                    // Perhaps a debug_assertion?
-                    libc::munmap(self.new_stack, self.stack_bytes);
-                }
-                set_stack_limit(self.old_stack_limit);
-            }
-        }
-
-        fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
-            // Calculate a number of pages we want to allocate for the new stack.
-            // For maximum portability we want to produce a stack that is aligned to a page and has
-            // a size that’s a multiple of page size. Furthermore we want to allocate two extras pages
-            // for the stack guard. To achieve that we do our calculations in number of pages and
-            // convert to bytes last.
-            let page_size = page_size();
-            let requested_pages = stack_size
-                .checked_add(page_size - 1)
-                .expect("unreasonably large stack requested") / page_size;
-            let stack_pages = std::cmp::max(1, requested_pages) + 2;
-            let stack_bytes = stack_pages.checked_mul(page_size)
-                .expect("unreasonably large stack requested");
-
-            // Next, there are a couple of approaches to how we allocate the new stack. We take the
-            // most obvious path and use `mmap`. We also `mprotect` a guard page into our
-            // allocation.
-            //
-            // We use a guard pattern to ensure we deallocate the allocated stack when we leave
-            // this function and also try to uphold various safety invariants required by `psm`
-            // (such as not unwinding from the callback we pass to it).
-            //
+        fn _grow(requested_stack_size: usize, callback: &mut dyn FnMut()) {
             // Other than that this code has no meaningful gotchas.
             unsafe {
-                let guard = StackRestoreGuard::new(stack_bytes, page_size);
-                let above_guard_page = guard.new_stack.add(page_size);
-                set_stack_limit(Some(above_guard_page as usize));
-                let panic = psm::on_stack(above_guard_page as *mut _, stack_size, move || {
+                // We use a guard pattern to ensure we deallocate the allocated stack when we leave
+                // this function and also try to uphold various safety invariants required by `psm`
+                // (such as not unwinding from the callback we pass to it).
+                // `StackRestoreGuard` allocates a memory area with suitable size and alignment.
+                // It also sets up stack guards if supported on target.
+                let guard = StackRestoreGuard::new(requested_stack_size);
+                let (stack_base,allocated_stack_size) = guard.stack_area();
+                debug_assert!(allocated_stack_size >= requested_stack_size);
+                set_stack_limit(Some(stack_base as usize));
+                // TODO should we not pass `allocated_stack_size` here?
+                let panic = psm::on_stack(stack_base, requested_stack_size, move || {
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback)).err()
                 });
                 drop(guard);
@@ -259,14 +166,6 @@ psm_stack_manipulation! {
                     std::panic::resume_unwind(p);
                 }
             }
-        }
-
-        fn page_size() -> usize {
-            // FIXME: consider caching the page size.
-            #[cfg(not(any(target_arch = "wasm32",target_os = "hermit")))]
-            unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) as usize }
-            #[cfg(any(target_arch = "wasm32",target_os = "hermit"))]
-            { 65536 }
         }
     }
 
