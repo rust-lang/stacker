@@ -154,7 +154,7 @@ psm_stack_manipulation! {
                 // `StackRestoreGuard` allocates a memory area with suitable size and alignment.
                 // It also sets up stack guards if supported on target.
                 let guard = StackRestoreGuard::new(requested_stack_size);
-                let (stack_base,allocated_stack_size) = guard.stack_area();
+                let (stack_base, allocated_stack_size) = guard.stack_area();
                 debug_assert!(allocated_stack_size >= requested_stack_size);
                 set_stack_limit(Some(stack_base as usize));
                 // TODO should we not pass `allocated_stack_size` here?

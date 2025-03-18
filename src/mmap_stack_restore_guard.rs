@@ -23,8 +23,6 @@ impl StackRestoreGuard {
             .checked_mul(page_size)
             .expect("unreasonably large stack requested");
 
-        // Next, there are a couple of approaches to how we allocate the new stack. If it is
-        // available, we take the most obvious path and use `mmap`.
         unsafe {
             let new_stack = libc::mmap(
                 std::ptr::null_mut(),
@@ -47,7 +45,7 @@ impl StackRestoreGuard {
                 old_stack_limit: get_stack_limit(),
             };
             // We leave a guard page without read/write access in our allocation.
-            // TODO we allocated two extra pages for guard pages, but here we only use one?
+            // There is one guard page below the stack and another above it.
             let above_guard_page = new_stack.add(page_size);
             #[cfg(not(target_os = "openbsd"))]
             let result = libc::mprotect(
