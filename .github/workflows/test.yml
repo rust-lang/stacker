@@ -29,7 +29,7 @@ jobs:
             mode: -Zminimal-versions
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust ${{ matrix.rust_toolchain }}
         uses: actions-rs/toolchain@v1
         with:
@@ -65,7 +65,7 @@ jobs:
             clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
             package: mingw-w64-i686-clang
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
           release: false
@@ -102,7 +102,7 @@ jobs:
             mingw_path: C:/msys64/mingw32/bin
             package: mingw-w64-i686-gcc
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
           release: false
@@ -135,8 +135,8 @@ jobs:
           - x86_64-pc-windows-gnullvm
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: llvm-mingw-version
           key: ${{ env.LLVM_MINGW_VERSION }}
@@ -187,7 +187,7 @@ jobs:
         mode: ["--release", "-Zminimal-versions", ""]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -215,7 +215,7 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -254,7 +254,7 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -282,7 +282,7 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -309,7 +309,7 @@ jobs:
         xwin_version: ["0.1.6"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -355,7 +355,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install Rust nightly
         uses: actions-rs/toolchain@v1
         with:
