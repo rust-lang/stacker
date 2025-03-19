@@ -44,19 +44,19 @@ impl StackRestoreGuard {
                 size_with_guard,
                 old_stack_limit: get_stack_limit(),
             };
-            // We leave a guard page without read/write access in our allocation.
+            // We leave two guard pages without read/write access in our allocation.
             // There is one guard page below the stack and another above it.
             let above_guard_page = new_stack.add(page_size);
             #[cfg(not(target_os = "openbsd"))]
             let result = libc::mprotect(
                 above_guard_page,
-                size_with_guard - page_size,
+                size_with_guard - 2 * page_size,
                 libc::PROT_READ | libc::PROT_WRITE,
             );
             #[cfg(target_os = "openbsd")]
             let result = if libc::mmap(
                 above_guard_page,
-                size_with_guard - page_size,
+                size_with_guard - 2 * page_size,
                 libc::PROT_READ | libc::PROT_WRITE,
                 libc::MAP_FIXED | libc::MAP_PRIVATE | libc::MAP_ANON | libc::MAP_STACK,
                 -1,
