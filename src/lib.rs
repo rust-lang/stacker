@@ -91,7 +91,7 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
 /// to determine whether a stack switch should be made or not.
 pub fn remaining_stack() -> Option<usize> {
     let current_ptr = current_stack_ptr();
-    get_stack_limit().map(|limit| current_ptr - limit)
+    get_stack_limit().map(|limit| current_ptr.saturating_sub(limit))
 }
 
 psm_stack_information!(
