@@ -123,9 +123,9 @@ jobs:
 
   cross-windows-gnullvm-check:
     name: Check ${{ matrix.manifest }} to ${{ matrix.rust_target }} with stable
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
-      LLVM_MINGW_VERSION: "20241030"
+      LLVM_MINGW_VERSION: "20250417"
     strategy:
       fail-fast: false
       matrix:
@@ -142,9 +142,9 @@ jobs:
           key: ${{ env.LLVM_MINGW_VERSION }}
       - name: Install llvm-mingw
         if: steps.cache.outputs.cache-hit != 'true'
-        run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-20.04-x86_64.tar.xz | tar xJf -
+        run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
       - name: Add llvm-mingw to PATH
-        run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-20.04-x86_64/bin" >> $GITHUB_PATH
+        run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -298,7 +298,7 @@ jobs:
 
   cross-windows-build:
     name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:
@@ -319,9 +319,9 @@ jobs:
       - name: Add toolchain shims
         run: |
           set -eux
-          sudo ln -s clang-12 /usr/bin/clang-cl
-          sudo ln -s llvm-ar-12 /usr/bin/llvm-lib
-          sudo ln -s lld-link-12 /usr/bin/lld-link
+          sudo ln -s clang-14 /usr/bin/clang-cl
+          sudo ln -s llvm-ar-14 /usr/bin/llvm-lib
+          sudo ln -s lld-link-14 /usr/bin/lld-link
       - name: Install Windows SDK
         run: |
           set -eux
