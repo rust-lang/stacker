@@ -58,10 +58,3 @@ rust_psm_replace_stack:
     call_indirect (i32) -> ()
     unreachable
     end_function
-
-# Add 7 bytes of padding to make total size divisible by 8 (prevents ar padding)
-.section .rodata,"",@
-.p2align 0
-padding_bytes:
-    .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-.size padding_bytes, 7
