@@ -17,4 +17,4 @@ readme = "README.mkd"
 cc = "1.1.22"
 
 [target.'cfg(osx)'.dev-dependencies]
-wasmtime-cli = "35.0.0"
+wasmtime-cli = "34.0.0"
