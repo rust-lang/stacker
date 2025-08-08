@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         rust_toolchain: [nightly, stable, 1.63.0]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest, windows-latest, macOS-latest, windows-11-arm]
         mode: ["--release", "-Zminimal-versions", ""]
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
         exclude:
@@ -27,6 +27,12 @@ jobs:
             mode: -Zminimal-versions
           - rust_toolchain: 1.63.0
             mode: -Zminimal-versions
+        include:
+          - os: windows-latest
+            extra_target: i686-pc-windows-msvc
+          - os: windows-11-arm
+            rust_toolchain: nightly
+            extra_target: arm64ec-pc-windows-msvc
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +42,7 @@ jobs:
           toolchain: ${{ matrix.rust_toolchain }}
           profile: minimal
           default: true
+          target: ${{ matrix.extra_target }}
       - name: Test ${{ matrix.manifest}} with ${{ matrix.mode }}
         uses: actions-rs/cargo@v1
         with:
@@ -46,6 +53,18 @@ jobs:
         with:
           command: test
           args: --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+      - if: ${{ matrix.extra_target }}
+        name: Test ${{ matrix.manifest}} with ${{ matrix.mode }} as ${{ matrix.extra_target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
+      - if: ${{ matrix.extra_target }}
+        name: Test ${{ matrix.manifest}} examples with ${{ matrix.mode }} as ${{ matrix.extra_target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
 
   clang-cl-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.clang_cl }}
