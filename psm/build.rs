@@ -4,7 +4,6 @@ fn find_assembly(
     os: &str,
     env: &str,
     masm: bool,
-    pad_wasm: bool,
 ) -> Option<(&'static str, bool)> {
     match (arch, endian, os, env) {
         // The implementations for stack switching exist, but, officially, doing so without Fibers
@@ -52,15 +51,7 @@ fn find_assembly(
         ("sparc", _, _, _) => Some(("src/arch/sparc_sysv.s", true)),
         ("riscv32", _, _, _) => Some(("src/arch/riscv.s", true)),
         ("riscv64", _, _, _) => Some(("src/arch/riscv64.s", true)),
-        ("wasm32", _, _, _) => {
-            if pad_wasm {
-                // For wasm32 we ship a precompiled object file.
-                // Under some conditions we pad the byte count to be divisible by 8
-                Some(("src/arch/wasm32_pad.o", true))
-            } else {
-                Some(("src/arch/wasm32.o", true))
-            }
-        },
+        ("wasm32", _, _, _) => Some(("src/arch/wasm32.o", true)),
         ("loongarch64", _, _, _) => Some(("src/arch/loongarch64.s", true)),
         _ => None,
     }
@@ -68,7 +59,6 @@ fn find_assembly(
 
 fn main() {
     use std::env::var;
-    use std::process::Command;
 
     println!("cargo:rustc-check-cfg=cfg(switchable_stack,asm,link_asm)");
 
@@ -94,9 +84,7 @@ fn main() {
     // supports compiling MASM, but that is not stable yet
     let masm = msvc && var("HOST").expect("HOST env not set").contains("windows");
 
-    let pad_wasm = Command::new("clang").arg("--version").output().is_ok() && Command::new("llvm-ar").arg("--version").output().is_err();
-
-    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm, pad_wasm) {
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm) {
         println!("cargo:rustc-cfg=asm");
         println!("cargo:rustc-cfg=link_asm");
         if canswitch {
