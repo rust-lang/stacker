@@ -58,3 +58,6 @@ rust_psm_replace_stack:
     call_indirect (i32) -> ()
     unreachable
     end_function
+
+# Fill bytes to align to 8 byte boundary
+.fill 3, 1, 0
