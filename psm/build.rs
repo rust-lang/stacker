@@ -110,10 +110,42 @@ fn main() {
     // directly to `ar` to assemble an archive. Otherwise we're actually
     // compiling the source assembly file.
     if asm.ends_with(".o") {
-        cfg.object(asm);
+        use ar_archive_writer::{write_archive_to_stream, NewArchiveMember, ArchiveKind, DEFAULT_OBJECT_READER};
+        use std::fs::read;
+        use std::path::PathBuf;
+        use std::io::Cursor;
+
+        let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
+        let output_path = PathBuf::from(&out_dir).join("libpsm_s.a");
+
+        let object_data = read(asm).expect("Failed to read object file");
+
+        let filename = asm.rsplit('/').next().unwrap_or(asm);
+        let member = NewArchiveMember::new(
+            object_data,
+            &DEFAULT_OBJECT_READER,
+            filename.to_string(),
+        );
+
+        let mut output_bytes = Cursor::new(Vec::new());
+        write_archive_to_stream(
+            &mut output_bytes,
+            &[member],
+            // Unfortunately, getDefaultKind() is not available in ar_archive_writer 0.4.2
+            // however looking at the llvm-ar source it looks like for wasm32-any-any
+            // it falls through to Gnu https://llvm.org/doxygen/Object_2Archive_8cpp_source.html
+            ArchiveKind::Gnu,
+            false,
+            false,
+        ).expect("Failed to write archive");
+
+        std::fs::write(&output_path, output_bytes.into_inner()).expect("Failed to write archive file");
+
+        println!("cargo:rustc-link-search=native={}", out_dir);
+        println!("cargo:rustc-link-lib=static=psm_s");
     } else {
         cfg.file(asm);
+        cfg.compile("libpsm_s.a");
     }
 
-    cfg.compile("libpsm_s.a");
 }
