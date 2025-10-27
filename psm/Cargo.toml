@@ -14,4 +14,5 @@ readme = "README.mkd"
 [dependencies]
 
 [build-dependencies]
+ar_archive_writer = "0.2.0"
 cc = "1.2.33"
