@@ -24,9 +24,7 @@ fn find_assembly(
                 Some(("src/arch/x86_64_windows_gnu.s", false))
             }
         }
-        ("x86_64", _, "cygwin", _) => {
-            Some(("src/arch/x86_64_windows_gnu.s", false))
-        }
+        ("x86_64", _, "cygwin", _) => Some(("src/arch/x86_64_windows_gnu.s", false)),
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
         ("arm64ec", _, "windows", "msvc") => Some(("src/arch/arm64ec_armasm.asm", false)),
         ("aarch64", _, "windows", _) => {
@@ -111,10 +109,12 @@ fn main() {
     // directly to `ar` to assemble an archive. Otherwise we're actually
     // compiling the source assembly file.
     if asm.ends_with(".o") {
-        use ar_archive_writer::{write_archive_to_stream, NewArchiveMember, ArchiveKind};
-        use std::fs::{read, metadata};
-        use std::path::PathBuf;
+        use ar_archive_writer::{
+            write_archive_to_stream, ArchiveKind, NewArchiveMember, ObjectReader,
+        };
+        use std::fs::{metadata, read};
         use std::io::Cursor;
+        use std::path::PathBuf;
 
         let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
         let output_path = PathBuf::from(&out_dir).join("libpsm_s.a");
@@ -123,7 +123,9 @@ fn main() {
         let file_metadata = metadata(asm).expect("Failed to read file metadata");
 
         // Extract file metadata
-        let mtime = file_metadata.modified().ok()
+        let mtime = file_metadata
+            .modified()
+            .ok()
             .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|duration| duration.as_secs())
             .unwrap_or(0);
@@ -131,7 +133,11 @@ fn main() {
         #[cfg(unix)]
         let (uid, gid, perms) = {
             use std::os::unix::fs::MetadataExt;
-            (file_metadata.uid(), file_metadata.gid(), file_metadata.mode())
+            (
+                file_metadata.uid(),
+                file_metadata.gid(),
+                file_metadata.mode(),
+            )
         };
 
         #[cfg(not(unix))]
@@ -140,7 +146,18 @@ fn main() {
         let filename = asm.rsplit('/').next().unwrap_or(asm);
         let member = NewArchiveMember {
             buf: Box::new(object_data),
-            get_symbols: |_data: &[u8], _callback: &mut dyn FnMut(&[u8]) -> Result<(), std::io::Error>| Ok(true),
+            object_reader:
+                &ObjectReader {
+                    get_symbols: |_data: &[u8],
+                                  _callback: &mut dyn FnMut(
+                        &[u8],
+                    )
+                        -> Result<(), std::io::Error>| Ok(true),
+                    get_xcoff_member_alignment: |_data| 0,
+                    is_64_bit_object_file: |_data| false,
+                    is_any_arm64_coff: |_data| false,
+                    is_ec_object_file: |_data| false,
+                },
             member_name: filename.to_string(),
             mtime,
             uid,
@@ -157,9 +174,12 @@ fn main() {
             // it falls through to Gnu https://llvm.org/doxygen/Object_2Archive_8cpp_source.html
             ArchiveKind::Gnu,
             false,
-        ).expect("Failed to write archive");
+            None,
+        )
+        .expect("Failed to write archive");
 
-        std::fs::write(&output_path, output_bytes.into_inner()).expect("Failed to write archive file");
+        std::fs::write(&output_path, output_bytes.into_inner())
+            .expect("Failed to write archive file");
 
         println!("cargo:rustc-link-search=native={}", out_dir);
         println!("cargo:rustc-link-lib=static=psm_s");
@@ -167,5 +187,4 @@ fn main() {
         cfg.file(asm);
         cfg.compile("libpsm_s.a");
     }
-
 }
