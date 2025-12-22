@@ -103,3 +103,20 @@ fn page_size() -> usize {
     // FIXME: consider caching the page size.
     unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) as usize }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stack_area() {
+        for stack_size_kb in 1..64 {
+            let size = stack_size_kb * 1024;
+            let stack = StackRestoreGuard::new(size);
+            assert_eq!(
+                stack.stack_area().1,
+                ((size + page_size() - 1) / page_size()) * page_size()
+            )
+        }
+    }
+}
