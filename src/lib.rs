@@ -157,7 +157,7 @@ psm_stack_manipulation! {
                 let (stack_base, allocated_stack_size) = guard.stack_area();
                 debug_assert!(allocated_stack_size >= requested_stack_size);
                 set_stack_limit(Some(stack_base as usize));
-                // TODO should we not pass `allocated_stack_size` here?
+                // TODO should we not pass `allocated_stack_size` here? 
                 let panic = psm::on_stack(stack_base, requested_stack_size, move || {
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback)).err()
                 });
