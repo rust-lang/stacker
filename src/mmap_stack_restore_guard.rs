@@ -82,7 +82,7 @@ impl StackRestoreGuard {
         unsafe {
             (
                 self.mapping.add(self.page_size),
-                self.size_with_guard - self.page_size,
+                self.size_with_guard - 2 * self.page_size,
             )
         }
     }
