@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 
 # Note that this function is not compiled when this package is uploaded to
 # crates.io, this source is only here as a reference for how the corresponding

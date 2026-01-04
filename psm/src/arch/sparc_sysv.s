@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 
 /* FIXME: this ABI has definitely not been verified at all */
 

@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 /* NOTE: sysv64 calling convention is used on all x86_64 targets, including Windows! */
 
 .text

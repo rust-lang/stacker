@@ -8,6 +8,7 @@ http://www.cygwin.com/ml/binutils/2003-06/msg00436.html
 */
 
 #include "psm.h"
+#include "gnu_stack_note.s"
 
 .set noreorder /* we’ll manage the delay slots on our own, thanks! */
 

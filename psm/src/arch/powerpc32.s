@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 /* FIXME: this probably does not cover all ABIs? Tested with sysv only, possibly works for AIX as
    well?
 */
