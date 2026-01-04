@@ -1,6 +1,6 @@
 #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "illumos"))]
 use libc::pthread_attr_get_np as get_attr;
-#[cfg(any(target_os = "linux", target_os = "solaris", target_os = "netbsd"))]
+#[cfg(any(target_os = "linux", target_os = "solaris", target_os = "netbsd", target_os = "haiku"))]
 use libc::pthread_getattr_np as get_attr;
 
 pub unsafe fn guess_os_stack_limit() -> Option<usize> {
