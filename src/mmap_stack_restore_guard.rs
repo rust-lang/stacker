@@ -113,9 +113,16 @@ mod tests {
         for stack_size_kb in 1..64 {
             let size = stack_size_kb * 1024;
             let stack = StackRestoreGuard::new(size);
+            let (mut ptr, actual_size) = stack.stack_area();
+            for _ in 0..actual_size {
+                unsafe {
+                    core::ptr::write_volatile(ptr, 0b10101011);
+                    ptr = ptr.add(1)
+                }
+            }
             assert_eq!(
-                stack.stack_area().1,
-                ((size + page_size() - 1) / page_size()) * page_size()
+                actual_size,
+                size.div_ceil(page_size()) * page_size()
             )
         }
     }
