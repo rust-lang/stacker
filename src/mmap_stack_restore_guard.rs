@@ -82,7 +82,7 @@ impl StackRestoreGuard {
         unsafe {
             (
                 self.mapping.add(self.page_size),
-                self.size_with_guard - self.page_size,
+                self.size_with_guard - 2 * self.page_size,
             )
         }
     }
@@ -102,4 +102,28 @@ impl Drop for StackRestoreGuard {
 fn page_size() -> usize {
     // FIXME: consider caching the page size.
     unsafe { libc::sysconf(libc::_SC_PAGE_SIZE) as usize }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_stack_area() {
+        for stack_size_kb in 1..64 {
+            let size = stack_size_kb * 1024;
+            let stack = StackRestoreGuard::new(size);
+            let (mut ptr, actual_size) = stack.stack_area();
+            for _ in 0..actual_size {
+                unsafe {
+                    core::ptr::write_volatile(ptr, 0b10101011);
+                    ptr = ptr.add(1)
+                }
+            }
+            assert_eq!(
+                actual_size,
+                size.div_ceil(page_size()) * page_size()
+            )
+        }
+    }
 }
