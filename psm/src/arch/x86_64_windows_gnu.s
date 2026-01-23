@@ -1,3 +1,5 @@
+#include "gnu_stack_note.s"
+
 .text
 
 .def rust_psm_stack_direction

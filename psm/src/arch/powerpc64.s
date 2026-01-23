@@ -7,6 +7,7 @@
 */
 
 #include "psm.h"
+#include "gnu_stack_note.s"
 
 .text
 .globl rust_psm_stack_direction

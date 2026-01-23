@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 /* NOTE: fastcall calling convention used on all x86 targets */
 
 .text

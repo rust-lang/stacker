@@ -1,4 +1,5 @@
 #include "psm.h"
+#include "gnu_stack_note.s"
 
 .text
 .syntax unified
