@@ -18,14 +18,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust_toolchain: [nightly, stable, 1.63.0]
+        rust_toolchain: [nightly, stable, 1.91.0]
         os: [ubuntu-latest, windows-latest, macOS-latest, windows-11-arm]
         mode: ["--release", "-Zminimal-versions", ""]
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
         exclude:
           - rust_toolchain: stable
             mode: -Zminimal-versions
-          - rust_toolchain: 1.63.0
+          - rust_toolchain: 1.91.0
             mode: -Zminimal-versions
         include:
           - os: windows-latest
