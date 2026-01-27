@@ -388,13 +388,12 @@ jobs:
       - run: cargo test --target wasm32-wasip1 --all -- --nocapture
 
   miri-test:
-    name: Test ${{ matrix.manifest }} with Miri on ${{ matrix.os }}
+    name: Test stacker with Miri on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -406,6 +405,6 @@ jobs:
           components: miri
           default: true
       - name: Setup Miri
-        run: cargo miri setup --manifest-path=${{ matrix.manifest }}
+        run: cargo miri setup
       - name: Test with Miri
-        run: cargo miri test --manifest-path=${{ matrix.manifest }} -- --nocapture
+        run: cargo miri test -- --nocapture
