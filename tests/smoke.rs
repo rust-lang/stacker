@@ -7,6 +7,7 @@ use std::thread;
 fn __stacker_black_box(_: *const u8) {}
 
 #[test]
+#[cfg_attr(miri, ignore)] // Too slow under Miri's interpreter
 fn deep() {
     fn foo(n: usize, s: &mut [u8]) {
         __stacker_black_box(s.as_ptr());
@@ -31,6 +32,7 @@ fn deep() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", ignore)]
+#[cfg_attr(miri, ignore)] // Too slow under Miri's interpreter
 fn panic() {
     fn foo(n: usize, s: &mut [u8]) {
         __stacker_black_box(s.as_ptr());
