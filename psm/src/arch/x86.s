@@ -4,7 +4,7 @@
 
 .text
 
-#if CFG_TARGET_OS_darwin || CFG_TARGET_OS_macos || CFG_TARGET_OS_ios
+#if defined(CFG_TARGET_OS_darwin) || defined(CFG_TARGET_OS_macos) || defined(CFG_TARGET_OS_ios)
 
 #define GLOBL(fnname) .globl _##fnname
 #define TYPE(fnname)
