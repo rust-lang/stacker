@@ -169,12 +169,12 @@ psm_stack_manipulation! {
     }
 
     no {
-        #[cfg(not(windows))]
+        #[cfg(not(all(windows, not(miri))))]
         fn _grow(stack_size: usize, callback: &mut dyn FnMut()) {
             let _ = stack_size;
             callback();
         }
-        #[cfg(windows)]
+        #[cfg(all(windows, not(miri)))]
         use backends::windows::_grow;
     }
 }
