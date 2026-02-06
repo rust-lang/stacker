@@ -18,6 +18,7 @@ fn recurse(n: usize) {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)] // Too slow under Miri's interpreter
 fn foo() {
     let limit = if cfg!(target_arch = "wasm32") {
         2000

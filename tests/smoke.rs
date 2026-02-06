@@ -21,7 +21,7 @@ fn deep() {
         }
     }
 
-    let limit = if cfg!(target_arch = "wasm32") {
+    let limit = if cfg!(target_arch = "wasm32") || cfg!(miri) {
         2000
     } else {
         256 * 1024
@@ -31,6 +31,7 @@ fn deep() {
 
 #[test]
 #[cfg_attr(target_arch = "wasm32", ignore)]
+#[cfg_attr(miri, ignore)] // Too slow under Miri's interpreter
 fn panic() {
     fn foo(n: usize, s: &mut [u8]) {
         __stacker_black_box(s.as_ptr());
