@@ -12,6 +12,15 @@
 #![allow(unused_macros)]
 #![no_std]
 
+#[cfg(all(asm, not(link_asm), target_os = "windows"))]
+mod asm;
+#[cfg(all(asm, not(link_asm), target_os = "windows"))]
+use asm::rust_psm_stack_direction;
+#[cfg(all(asm, not(link_asm), target_os = "windows"))]
+use asm::rust_psm_stack_pointer;
+#[cfg(all(switchable_stack, not(link_asm), target_os = "windows"))]
+use asm::{rust_psm_on_stack, rust_psm_replace_stack};
+
 macro_rules! extern_item {
     (unsafe $($toks: tt)+) => {
         unsafe extern "C" $($toks)+
@@ -58,9 +67,9 @@ macro_rules! extern_item {
 extern_item! { {
     #![cfg_attr(link_asm, link(name="psm_s"))]
 
-    #[cfg(asm)]
+    #[cfg(link_asm)]
     fn rust_psm_stack_direction() -> u8;
-    #[cfg(asm)]
+    #[cfg(link_asm)]
     fn rust_psm_stack_pointer() -> *mut u8;
 
     #[cfg(all(switchable_stack, not(target_os = "windows")))]
@@ -78,14 +87,14 @@ extern_item! { {
         callback: extern_item!(unsafe fn(usize, usize)),
         sp: *mut u8,
     );
-    #[cfg(all(switchable_stack, target_os = "windows"))]
+    #[cfg(all(switchable_stack, target_os = "windows", link_asm))]
     fn rust_psm_replace_stack(
         data: usize,
         callback: extern_item!(unsafe fn(usize) -> !),
         sp: *mut u8,
         stack_base: *mut u8
     ) -> !;
-    #[cfg(all(switchable_stack, target_os = "windows"))]
+    #[cfg(all(switchable_stack, target_os = "windows", link_asm))]
     fn rust_psm_on_stack(
         data: usize,
         return_ptr: usize,
