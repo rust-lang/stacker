@@ -1,7 +1,7 @@
 use libc::c_void;
 use std::io;
 use std::ptr;
-use windows_sys::Win32::Foundation::BOOL;
+use windows_sys::core::BOOL;
 use windows_sys::Win32::System::Memory::VirtualQuery;
 use windows_sys::Win32::System::Threading::{
     ConvertFiberToThread, ConvertThreadToFiber, CreateFiber, DeleteFiber, IsThreadAFiber,

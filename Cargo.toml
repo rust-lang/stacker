@@ -26,7 +26,7 @@ libc = "0.2.156"
 psm = { path = "psm", version = "0.1.7" }
 
 [target.'cfg(all(windows, not(target_arch = "arm64ec")))'.dependencies.windows-sys]
-version = ">=0.52.0, <0.60.0"
+version = ">=0.60.0, <0.62.0"
 features = [
     "Win32_System_Memory",
     "Win32_System_Threading",
@@ -34,7 +34,7 @@ features = [
 ]
 
 [target.arm64ec-pc-windows-msvc.dependencies.windows-sys]
-version = ">=0.59.0, <0.60.0"
+version = ">=0.60.0, <0.62.0"
 features = [
     "Win32_System_Memory",
     "Win32_System_Threading",
