@@ -3,37 +3,16 @@ fn find_assembly(
     endian: &str,
     os: &str,
     env: &str,
-    masm: bool,
 ) -> Option<(&'static str, bool)> {
     match (arch, endian, os, env) {
-        // The implementations for stack switching exist, but, officially, doing so without Fibers
-        // is not supported in Windows. For x86_64 the implementation actually works locally,
-        // but failed tests in CI (???). Might want to have a feature for experimental support
-        // here.
-        ("x86", _, "windows", _) => {
-            if masm {
-                Some(("src/arch/x86_msvc.asm", false))
-            } else {
-                Some(("src/arch/x86_windows_gnu.s", false))
-            }
-        }
-        ("x86_64", _, "windows", _) => {
-            if masm {
-                Some(("src/arch/x86_64_msvc.asm", false))
-            } else {
-                Some(("src/arch/x86_64_windows_gnu.s", false))
-            }
-        }
+        // Windows: inline asm in src/asm/windows/. Stack switching (canswitch)
+        // is disabled — officially requires Fibers.
+        ("x86", _, "windows", _) => None,
+        ("x86_64", _, "windows", _) => None,
+        ("aarch64", _, "windows", _) => None,
         ("x86_64", _, "cygwin", _) => Some(("src/arch/x86_64_windows_gnu.s", false)),
         ("arm", _, "windows", "msvc") => Some(("src/arch/arm_armasm.asm", false)),
         ("arm64ec", _, "windows", "msvc") => Some(("src/arch/arm64ec_armasm.asm", false)),
-        ("aarch64", _, "windows", _) => {
-            if masm {
-                Some(("src/arch/aarch64_armasm.asm", false))
-            } else {
-                Some(("src/arch/aarch_aapcs64.s", false))
-            }
-        }
         ("x86", _, _, _) => Some(("src/arch/x86.s", true)),
         ("x86_64", _, _, _) => Some(("src/arch/x86_64.s", true)),
         ("arm", _, _, _) => Some(("src/arch/arm_aapcs.s", true)),
@@ -74,22 +53,16 @@ fn main() {
     let mut cfg = cc::Build::new();
 
     let msvc = cfg.get_compiler().is_like_msvc();
-    // If we're targeting msvc, either via regular MS toolchain or clang-cl, we
-    // will _usually_ want to use the regular Microsoft assembler if it exists,
-    // which is done for us within cc, however it _probably_ won't exist if
-    // we're in a cross-compilation context pm a platform that can't natively
-    // run Windows executables, so in that case we instead use the the equivalent
-    // GAS assembly file instead. This logic can be removed once LLVM natively
-    // supports compiling MASM, but that is not stable yet
-    let masm = msvc && var("HOST").expect("HOST env not set").contains("windows");
-
-    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env, masm) {
+    let asm = if let Some((asm, canswitch)) = find_assembly(&arch, &endian, &os, &env) {
         println!("cargo:rustc-cfg=asm");
         println!("cargo:rustc-cfg=link_asm");
         if canswitch {
             println!("cargo:rustc-cfg=switchable_stack")
         }
         asm
+    } else if (arch == "aarch64" || arch == "x86_64" || arch == "x86") && os == "windows" {
+        println!("cargo:rustc-cfg=asm");
+        return;
     } else {
         println!(
             "cargo:warning=Target {}-{}-{} has no assembly files!",
