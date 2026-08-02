@@ -100,14 +100,15 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
         rust_target:
           - x86_64-pc-windows-msvc
-          - i686-pc-windows-msvc
+          # - i686-pc-windows-msvc
         include:
           - rust_target: x86_64-pc-windows-msvc
             clang_cl: C:/msys64/mingw64/bin/clang-cl.exe
             package: mingw-w64-x86_64-clang
-          - rust_target: i686-pc-windows-msvc
-            clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
-            package: mingw-w64-i686-clang
+          # mingw has removed the relevant packages
+          # - rust_target: i686-pc-windows-msvc
+          #   clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
+          #   package: mingw-w64-i686-clang
     steps:
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
