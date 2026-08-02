@@ -12,6 +12,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  psm-msrv-test:
+    name: Test psm on MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust 1.88.0
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.88.0
+          profile: minimal
+          default: true
+      - name: Test psm
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path=psm/Cargo.toml --all-targets
+
   native-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.os }} with ${{ matrix.rust_toolchain }} and ${{ matrix.mode }}
     runs-on: ${{ matrix.os }}
