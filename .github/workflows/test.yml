@@ -23,12 +23,12 @@ jobs:
     name: Test psm on MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: "1.88.0"
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust 1.88.0
-        uses: dtolnay/rust-toolchain@1.88.0
-      - name: Test psm
-        run: cargo test --manifest-path psm/Cargo.toml --all-targets
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: cargo test --manifest-path psm/Cargo.toml --all-targets
 
   native-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.os }} with ${{ matrix.rust_toolchain }} and ${{ matrix.mode }}
@@ -60,28 +60,25 @@ jobs:
     timeout-minutes: 10
     env:
       CFLAGS: ${{ matrix.cflags }}
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust ${{ matrix.rust_toolchain }}
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust_toolchain }}
-          targets: ${{ matrix.extra_target }}
-      - name: Test ${{ matrix.manifest }} with ${{ matrix.mode }}
-        run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
-      - name: Test ${{ matrix.manifest }} examples with ${{ matrix.mode }}
-        run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
       - if: ${{ matrix.extra_target }}
-        name: Test ${{ matrix.manifest }} with ${{ matrix.mode }} as ${{ matrix.extra_target }}
+        run: rustup target add --toolchain ${{ env.RUSTUP_TOOLCHAIN }} ${{ matrix.extra_target }}
+      - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
+      - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+      - if: ${{ matrix.extra_target }}
         run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
       - if: ${{ matrix.extra_target }}
-        name: Test ${{ matrix.manifest }} examples with ${{ matrix.mode }} as ${{ matrix.extra_target }}
         run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
 
   clang-cl-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with clang-cl
     runs-on: windows-latest
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: stable
     strategy:
       fail-fast: false
       matrix:
@@ -91,9 +88,7 @@ jobs:
           - i686-pc-windows-msvc
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo test --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }} -- --nocapture
         env:
           CC: "C:/Program Files/LLVM/bin/clang-cl.exe"
@@ -103,6 +98,8 @@ jobs:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.rust_toolchain }}
     runs-on: windows-latest
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}-${{ matrix.rust_target }}
     strategy:
       fail-fast: false
       matrix:
@@ -113,11 +110,8 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust ${{ matrix.rust_toolchain }} for ${{ matrix.rust_target }}
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust_toolchain }}-${{ matrix.rust_target }}
-      - run: cargo +${{ matrix.rust_toolchain }}-${{ matrix.rust_target }} test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: cargo test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
         env:
           CFLAGS: "-Werror -Wundef"
 
@@ -127,6 +121,7 @@ jobs:
     timeout-minutes: 10
     env:
       LLVM_MINGW_VERSION: "20250417"
+      RUSTUP_TOOLCHAIN: stable
     strategy:
       fail-fast: false
       matrix:
@@ -148,12 +143,8 @@ jobs:
         run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
       - name: Add llvm-mingw to PATH
         run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
-      - name: Check
-        run: cargo check --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: cargo check --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-linux-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with nightly ${{ matrix.mode }}
@@ -184,12 +175,11 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
         mode: ["--release", "-Zminimal-versions", ""]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.rust_target }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: |
           cargo install cross --git https://github.com/cross-rs/cross
@@ -209,14 +199,12 @@ jobs:
           - x86_64-unknown-freebsd
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.rust_target }}
-      - name: Build ${{ matrix.rust_target }}
-        run: cargo build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: cargo build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} with cargo-cross
@@ -242,16 +230,14 @@ jobs:
           - x86_64-unknown-netbsd
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.rust_target }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
-      - name: Build ${{ matrix.rust_target }}
-        run: cross build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+      - run: cross build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-ios-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} on ${{ matrix.rust_toolchain }}
@@ -265,15 +251,12 @@ jobs:
           - x86_64-apple-ios
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust_toolchain }}
-          targets: ${{ matrix.rust_target }}
-      - name: Build
-        run: cargo build --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: cargo build --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-windows-build:
     name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
@@ -287,12 +270,11 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
         xwin_version: ["0.1.6"]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Add toolchain shims
         run: |
           set -eux
@@ -331,12 +313,11 @@ jobs:
     name: Test stacker on WASM
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: wasm32-wasip1
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target wasm32-wasip1
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
           echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
@@ -351,12 +332,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v7
-      - name: Install Rust nightly with Miri
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: miri
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --component miri
       - name: Setup Miri
         run: cargo miri setup
       - name: Test with Miri
