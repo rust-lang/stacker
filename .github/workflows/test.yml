@@ -11,23 +11,24 @@ on:
     types: [opened, reopened, synchronize]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   psm-msrv-test:
     name: Test psm on MSRV
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust 1.88.0
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.88.0
-          profile: minimal
-          default: true
+        uses: dtolnay/rust-toolchain@1.88.0
       - name: Test psm
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path=psm/Cargo.toml --all-targets
+        run: cargo test --manifest-path psm/Cargo.toml --all-targets
 
   native-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.os }} with ${{ matrix.rust_toolchain }} and ${{ matrix.mode }}
@@ -60,40 +61,27 @@ jobs:
     env:
       CFLAGS: ${{ matrix.cflags }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust ${{ matrix.rust_toolchain }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_toolchain }}
-          profile: minimal
-          default: true
-          target: ${{ matrix.extra_target }}
-      - name: Test ${{ matrix.manifest}} with ${{ matrix.mode }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
-      - name: Test ${{ matrix.manifest}} examples with ${{ matrix.mode }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+          targets: ${{ matrix.extra_target }}
+      - name: Test ${{ matrix.manifest }} with ${{ matrix.mode }}
+        run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
+      - name: Test ${{ matrix.manifest }} examples with ${{ matrix.mode }}
+        run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
       - if: ${{ matrix.extra_target }}
-        name: Test ${{ matrix.manifest}} with ${{ matrix.mode }} as ${{ matrix.extra_target }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
+        name: Test ${{ matrix.manifest }} with ${{ matrix.mode }} as ${{ matrix.extra_target }}
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
       - if: ${{ matrix.extra_target }}
-        name: Test ${{ matrix.manifest}} examples with ${{ matrix.mode }} as ${{ matrix.extra_target }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+        name: Test ${{ matrix.manifest }} examples with ${{ matrix.mode }} as ${{ matrix.extra_target }}
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
 
   clang-cl-test:
-    name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.clang_cl }}
+    name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with clang-cl
     runs-on: windows-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -101,36 +89,20 @@ jobs:
         rust_target:
           - x86_64-pc-windows-msvc
           - i686-pc-windows-msvc
-        include:
-          - rust_target: x86_64-pc-windows-msvc
-            clang_cl: C:/msys64/mingw64/bin/clang-cl.exe
-            package: mingw-w64-x86_64-clang
-          - rust_target: i686-pc-windows-msvc
-            clang_cl: C:/msys64/mingw32/bin/clang-cl.exe
-            package: mingw-w64-i686-clang
     steps:
-      - uses: actions/checkout@v4
-      - uses: msys2/setup-msys2@v2
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          release: false
-          install: ${{ matrix.package }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          default: true
-          target: ${{ matrix.rust_target }}
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }} -- --nocapture
+          targets: ${{ matrix.rust_target }}
+      - run: cargo test --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }} -- --nocapture
         env:
-          CC: ${{ matrix.clang_cl }}
+          CC: "C:/Program Files/LLVM/bin/clang-cl.exe"
           CFLAGS: "-Werror -Wundef"
 
   windows-gnu-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with ${{ matrix.rust_toolchain }}
     runs-on: windows-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -139,38 +111,20 @@ jobs:
           - x86_64-pc-windows-gnu
           - i686-pc-windows-gnu
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
-        include:
-          - rust_target: x86_64-pc-windows-gnu
-            mingw_path: C:/msys64/mingw64/bin
-            package: mingw-w64-x86_64-gcc
-          - rust_target: i686-pc-windows-gnu
-            mingw_path: C:/msys64/mingw32/bin
-            package: mingw-w64-i686-gcc
     steps:
-      - uses: actions/checkout@v4
-      - uses: msys2/setup-msys2@v2
+      - uses: actions/checkout@v7
+      - name: Install Rust ${{ matrix.rust_toolchain }} for ${{ matrix.rust_target }}
+        uses: dtolnay/rust-toolchain@master
         with:
-          release: false
-          install: ${{ matrix.package }}
-      - run: echo "c:/msys64/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-      - run: echo "${{ matrix.mingw_path }}" | Out-File -FilePath $env:GITHUB_PATH -Append
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust_toolchain }}
-          profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+          toolchain: ${{ matrix.rust_toolchain }}-${{ matrix.rust_target }}
+      - run: cargo +${{ matrix.rust_toolchain }}-${{ matrix.rust_target }} test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
         env:
           CFLAGS: "-Werror -Wundef"
 
   cross-windows-gnullvm-check:
     name: Check ${{ matrix.manifest }} to ${{ matrix.rust_target }} with stable
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     env:
       LLVM_MINGW_VERSION: "20250417"
     strategy:
@@ -182,27 +136,24 @@ jobs:
           - x86_64-pc-windows-gnullvm
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@v7
+      - name: Cache llvm-mingw
+        id: llvm_mingw_cache
+        uses: actions/cache@v6
         with:
-          path: llvm-mingw-version
-          key: ${{ env.LLVM_MINGW_VERSION }}
+          path: llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64
+          key: llvm-mingw-${{ runner.os }}-${{ env.LLVM_MINGW_VERSION }}
       - name: Install llvm-mingw
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.llvm_mingw_cache.outputs.cache-hit != 'true'
         run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
       - name: Add llvm-mingw to PATH
         run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
-          target: ${{ matrix.rust_target }}
+          targets: ${{ matrix.rust_target }}
       - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+        run: cargo check --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-linux-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with nightly ${{ matrix.mode }}
@@ -234,14 +185,11 @@ jobs:
         mode: ["--release", "-Zminimal-versions", ""]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
+          targets: ${{ matrix.rust_target }}
       - name: Install cross
         run: |
           cargo install cross --git https://github.com/cross-rs/cross
@@ -262,19 +210,13 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
+          targets: ${{ matrix.rust_target }}
       - name: Build ${{ matrix.rust_target }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+        run: cargo build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} with cargo-cross
@@ -301,20 +243,15 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust nightly
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
+          targets: ${{ matrix.rust_target }}
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build ${{ matrix.rust_target }}
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+        run: cross build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-ios-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} on ${{ matrix.rust_toolchain }}
@@ -329,19 +266,14 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_toolchain }}
-          profile: minimal
-          target: ${{ matrix.rust_target }}
-          default: true
+          targets: ${{ matrix.rust_target }}
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
+        run: cargo build --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-windows-build:
     name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
@@ -356,13 +288,11 @@ jobs:
         xwin_version: ["0.1.6"]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
-          target: ${{ matrix.rust_target }}
+          targets: ${{ matrix.rust_target }}
       - name: Add toolchain shims
         run: |
           set -eux
@@ -402,13 +332,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust nightly
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          default: true
-          target: wasm32-wasip1
+          targets: wasm32-wasip1
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
           echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
@@ -424,14 +352,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Rust nightly with Miri
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
           components: miri
-          default: true
       - name: Setup Miri
         run: cargo miri setup
       - name: Test with Miri
