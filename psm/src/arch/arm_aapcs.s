@@ -4,7 +4,7 @@
 .text
 .syntax unified
 
-#if defined(CFG_TARGET_OS_darwin) || defined(CFG_TARGET_OS_macos) || defined(CFG_TARGET_OS_ios) || defined(CFG_TARGET_OS_tvos)
+#if defined(CFG_TARGET_OS_darwin) || defined(CFG_TARGET_OS_macos) || defined(CFG_TARGET_OS_ios) || defined(CFG_TARGET_OS_tvos) || defined(CFG_TARGET_OS_watchos) || defined(CFG_TARGET_OS_visionos)
 
 #define GLOBL(fnname) .globl _##fnname
 #define THUMBTYPE(fnname) .thumb_func _##fnname
