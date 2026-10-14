@@ -35,6 +35,18 @@ extern crate psm;
 mod backends;
 
 use std::cell::Cell;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+static HUGE_PAGES: AtomicBool = AtomicBool::new(false);
+static CACHED_STACKS: AtomicUsize = AtomicUsize::new(0);
+
+pub fn set_huge_pages(enabled: bool) {
+    HUGE_PAGES.store(enabled, Ordering::Relaxed);
+}
+
+pub fn set_cached_stacks(count: usize) {
+    CACHED_STACKS.store(count, Ordering::Relaxed);
+}
 
 /// Grows the call stack if necessary.
 ///
@@ -56,8 +68,14 @@ pub fn maybe_grow<R, F: FnOnce() -> R>(red_zone: usize, stack_size: usize, callb
     if enough_space {
         callback()
     } else {
-        grow(stack_size, callback)
+        grow_cold(stack_size, callback)
     }
+}
+
+#[cold]
+#[inline(never)]
+fn grow_cold<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
+    grow(stack_size, callback)
 }
 
 /// Always creates a new stack for the passed closure to run on.
