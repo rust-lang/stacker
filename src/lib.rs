@@ -89,9 +89,16 @@ pub fn grow<R, F: FnOnce() -> R>(stack_size: usize, callback: F) -> R {
 ///
 /// This function will return the amount of stack space left which will be used
 /// to determine whether a stack switch should be made or not.
+///
+/// Returns `None` when the amount is unknown, including when the current stack
+/// pointer is not on the stack this library knows the bounds of. That happens
+/// when a host switches to a stack of its own, as Ruby fibers and C coroutine
+/// libraries do.
 pub fn remaining_stack() -> Option<usize> {
     let current_ptr = current_stack_ptr();
-    get_stack_limit().map(|limit| current_ptr.saturating_sub(limit))
+    get_stack_bounds()
+        .filter(|bounds| bounds.contains(current_ptr))
+        .map(|bounds| current_ptr - bounds.start)
 }
 
 psm_stack_information!(
@@ -116,21 +123,36 @@ psm_stack_information!(
     }
 );
 
+/// The address range of a stack that grows downwards: `start` is its limit
+/// and `end` the address it starts growing down from.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct StackBounds {
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+}
+
+impl StackBounds {
+    #[inline(always)]
+    fn contains(&self, stack_ptr: usize) -> bool {
+        self.start <= stack_ptr && stack_ptr <= self.end
+    }
+}
+
 thread_local! {
-    static STACK_LIMIT: Cell<Option<usize>> = Cell::new(unsafe {
-        backends::guess_os_stack_limit()
+    static STACK_BOUNDS: Cell<Option<StackBounds>> = Cell::new(unsafe {
+        backends::guess_os_stack_bounds()
     })
 }
 
 #[inline(always)]
-fn get_stack_limit() -> Option<usize> {
-    STACK_LIMIT.with(|s| s.get())
+fn get_stack_bounds() -> Option<StackBounds> {
+    STACK_BOUNDS.with(|s| s.get())
 }
 
 #[inline(always)]
 #[allow(unused)]
-fn set_stack_limit(l: Option<usize>) {
-    STACK_LIMIT.with(|s| s.set(l))
+fn set_stack_bounds(bounds: Option<StackBounds>) {
+    STACK_BOUNDS.with(|s| s.set(bounds))
 }
 
 psm_stack_manipulation! {
@@ -156,7 +178,10 @@ psm_stack_manipulation! {
                 let guard = StackRestoreGuard::new(requested_stack_size);
                 let (stack_base, allocated_stack_size) = guard.stack_area();
                 debug_assert!(allocated_stack_size >= requested_stack_size);
-                set_stack_limit(Some(stack_base as usize));
+                set_stack_bounds(Some(StackBounds {
+                    start: stack_base as usize,
+                    end: stack_base as usize + allocated_stack_size,
+                }));
                 let panic = psm::on_stack(stack_base, allocated_stack_size, move || {
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback)).err()
                 });

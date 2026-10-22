@@ -1,10 +1,10 @@
-use crate::{get_stack_limit, set_stack_limit};
+use crate::{get_stack_bounds, set_stack_bounds, StackBounds};
 
 pub struct StackRestoreGuard {
     mapping: *mut u8,
     size_with_guard: usize,
     page_size: usize,
-    old_stack_limit: Option<usize>,
+    old_stack_bounds: Option<StackBounds>,
 }
 
 impl StackRestoreGuard {
@@ -42,7 +42,7 @@ impl StackRestoreGuard {
                 mapping: new_stack as *mut u8,
                 page_size,
                 size_with_guard,
-                old_stack_limit: get_stack_limit(),
+                old_stack_bounds: get_stack_bounds(),
             };
             // We leave two guard pages without read/write access in our allocation.
             // There is one guard page below the stack and another above it.
@@ -95,7 +95,7 @@ impl Drop for StackRestoreGuard {
             // Perhaps a debug_assertion?
             libc::munmap(self.mapping as *mut std::ffi::c_void, self.size_with_guard);
         }
-        set_stack_limit(self.old_stack_limit);
+        set_stack_bounds(self.old_stack_bounds);
     }
 }
 

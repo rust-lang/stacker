@@ -1,4 +1,4 @@
 #[inline(always)]
-pub unsafe fn guess_os_stack_limit() -> Option<usize> {
+pub unsafe fn guess_os_stack_bounds() -> Option<crate::StackBounds> {
     None
 }

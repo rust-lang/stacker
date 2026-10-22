@@ -1,10 +1,10 @@
 cfg_if! {
     if #[cfg(miri)] {
         mod fallback;
-        pub use fallback::guess_os_stack_limit;
+        pub use fallback::guess_os_stack_bounds;
     } else if #[cfg(windows)] {
         pub(crate) mod windows;
-        pub use windows::guess_os_stack_limit;
+        pub use windows::guess_os_stack_bounds;
     } else if #[cfg(any(
         target_os = "linux",
         target_os = "solaris",
@@ -15,15 +15,15 @@ cfg_if! {
         target_os = "illumos"
     ))] {
         mod unix;
-        pub use unix::guess_os_stack_limit;
+        pub use unix::guess_os_stack_bounds;
     } else if #[cfg(target_os = "openbsd")] {
         mod openbsd;
-        pub use openbsd::guess_os_stack_limit;
+        pub use openbsd::guess_os_stack_bounds;
     } else if #[cfg(target_os = "macos")] {
         mod macos;
-        pub use macos::guess_os_stack_limit;
+        pub use macos::guess_os_stack_bounds;
     } else {
         mod fallback;
-        pub use fallback::guess_os_stack_limit;
+        pub use fallback::guess_os_stack_bounds;
     }
 }
