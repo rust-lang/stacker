@@ -67,6 +67,7 @@ jobs:
       CFLAGS: ${{ matrix.cflags }}
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
       MANIFEST: ${{ matrix.manifest }}
+      MODE: ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -74,12 +75,12 @@ jobs:
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal
       - if: ${{ matrix.extra_target }}
         run: rustup target add --toolchain ${RUSTUP_TOOLCHAIN} ${{ matrix.extra_target }}
-      - run: cargo test --manifest-path=${MANIFEST} ${{ matrix.mode }} -- --nocapture
-      - run: cargo test --manifest-path=${MANIFEST} ${{ matrix.mode }} --examples -- --nocapture
+      - run: cargo test --manifest-path=${MANIFEST} ${MODE} -- --nocapture
+      - run: cargo test --manifest-path=${MANIFEST} ${MODE} --examples -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${{ matrix.mode }} -- --nocapture
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${MODE} -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${{ matrix.mode }} --examples -- --nocapture
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${MODE} --examples -- --nocapture
 
   clang-cl-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with clang-cl
@@ -199,6 +200,7 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
       RUST_TARGET: ${{ matrix.rust_target }}
       MANIFEST: ${{ matrix.manifest }}
+      MODE: ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -209,7 +211,7 @@ jobs:
           cargo install cross --git https://github.com/cross-rs/cross
       - name: Test
         run: |
-          cross test --target ${RUST_TARGET} --manifest-path=${MANIFEST}  ${{ matrix.mode }} -- --test-threads=1 --nocapture
+          cross test --target ${RUST_TARGET} --manifest-path=${MANIFEST}  ${MODE} -- --test-threads=1 --nocapture
 
   native-build:
     name: Build ${{ matrix.manifest }} to ${{ matrix.rust_target }} on nightly
