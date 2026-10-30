@@ -27,6 +27,8 @@ jobs:
       RUSTUP_TOOLCHAIN: "1.88.0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
       - run: cargo test --manifest-path psm/Cargo.toml --all-targets
 
@@ -63,6 +65,8 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
       - if: ${{ matrix.extra_target }}
         run: rustup target add --toolchain ${{ env.RUSTUP_TOOLCHAIN }} ${{ matrix.extra_target }}
@@ -88,6 +92,8 @@ jobs:
           - i686-pc-windows-msvc
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo test --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }} -- --nocapture
         env:
@@ -110,6 +116,8 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
       - run: cargo test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
         env:
@@ -132,6 +140,8 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Cache llvm-mingw
         id: llvm_mingw_cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -179,6 +189,8 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: |
@@ -203,6 +215,8 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
@@ -234,6 +248,8 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
@@ -255,6 +271,8 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo build --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
@@ -274,6 +292,8 @@ jobs:
       RUSTUP_TOOLCHAIN: stable
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - name: Add toolchain shims
         run: |
@@ -317,6 +337,8 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target wasm32-wasip1
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
@@ -336,6 +358,8 @@ jobs:
       RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --component miri
       - name: Setup Miri
         run: cargo miri setup
