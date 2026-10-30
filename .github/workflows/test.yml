@@ -66,6 +66,7 @@ jobs:
     env:
       CFLAGS: ${{ matrix.cflags }}
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,12 +74,12 @@ jobs:
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal
       - if: ${{ matrix.extra_target }}
         run: rustup target add --toolchain ${RUSTUP_TOOLCHAIN} ${{ matrix.extra_target }}
-      - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
-      - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+      - run: cargo test --manifest-path=${MANIFEST} ${{ matrix.mode }} -- --nocapture
+      - run: cargo test --manifest-path=${MANIFEST} ${{ matrix.mode }} --examples -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${{ matrix.mode }} -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
+        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${{ matrix.mode }} --examples -- --nocapture
 
   clang-cl-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with clang-cl
@@ -87,6 +88,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: stable
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +101,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal --target ${env:RUST_TARGET}
-      - run: cargo test --target=${env:RUST_TARGET} --manifest-path=${{ matrix.manifest }} -- --nocapture
+      - run: cargo test --target=${env:RUST_TARGET} --manifest-path=${env:MANIFEST} -- --nocapture
         env:
           CC: "C:/Program Files/LLVM/bin/clang-cl.exe"
           CFLAGS: "-Werror -Wundef"
@@ -111,6 +113,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}-${{ matrix.rust_target }}
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     strategy:
       fail-fast: false
       matrix:
@@ -124,7 +127,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal
-      - run: cargo test --target ${env:RUST_TARGET} --manifest-path=${{ matrix.manifest }}
+      - run: cargo test --target ${env:RUST_TARGET} --manifest-path=${env:MANIFEST}
         env:
           CFLAGS: "-Werror -Wundef"
 
@@ -136,6 +139,7 @@ jobs:
       LLVM_MINGW_VERSION: "20250417"
       RUSTUP_TOOLCHAIN: stable
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     strategy:
       fail-fast: false
       matrix:
@@ -160,7 +164,7 @@ jobs:
       - name: Add llvm-mingw to PATH
         run: echo "${{ github.workspace }}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${RUST_TARGET}
-      - run: cargo check --target ${RUST_TARGET} --manifest-path=${{ matrix.manifest }}
+      - run: cargo check --target ${RUST_TARGET} --manifest-path=${MANIFEST}
 
   cross-linux-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with nightly ${{ matrix.mode }}
@@ -194,6 +198,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: nightly
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -204,7 +209,7 @@ jobs:
           cargo install cross --git https://github.com/cross-rs/cross
       - name: Test
         run: |
-          cross test --target ${RUST_TARGET} --manifest-path=${{ matrix.manifest }}  ${{ matrix.mode }} -- --test-threads=1 --nocapture
+          cross test --target ${RUST_TARGET} --manifest-path=${MANIFEST}  ${{ matrix.mode }} -- --test-threads=1 --nocapture
 
   native-build:
     name: Build ${{ matrix.manifest }} to ${{ matrix.rust_target }} on nightly
@@ -221,12 +226,13 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: nightly
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${RUST_TARGET}
-      - run: cargo build --target ${RUST_TARGET} --manifest-path=${{ matrix.manifest }}
+      - run: cargo build --target ${RUST_TARGET} --manifest-path=${MANIFEST}
 
   cross-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} with cargo-cross
@@ -255,6 +261,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: nightly
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -262,7 +269,7 @@ jobs:
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${RUST_TARGET}
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
-      - run: cross build --target ${RUST_TARGET} --manifest-path=${{ matrix.manifest }}
+      - run: cross build --target ${RUST_TARGET} --manifest-path=${MANIFEST}
 
   cross-ios-build:
     name: Cross-compile ${{ matrix.manifest }} to ${{ matrix.rust_target }} on ${{ matrix.rust_toolchain }}
@@ -279,12 +286,13 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${RUST_TARGET}
-      - run: cargo build --target=${RUST_TARGET} --manifest-path=${{ matrix.manifest }}
+      - run: cargo build --target=${RUST_TARGET} --manifest-path=${MANIFEST}
 
   cross-windows-build:
     name: Cross-compile ${{ matrix.manifest }} for ${{ matrix.rust_target }} from x86_64-unknown-linux-gnu
@@ -301,6 +309,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: stable
       RUST_TARGET: ${{ matrix.rust_target }}
+      MANIFEST: ${{ matrix.manifest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -338,7 +347,7 @@ jobs:
           RUSTFLAGS: "-Lnative=/tmp/xwin/crt/lib/x86_64 -Lnative=/tmp/xwin/sdk/lib/um/x86_64 -Lnative=/tmp/xwin/sdk/lib/ucrt/x86_64"
         run: |
           set -eux
-          cargo build --target ${RUST_TARGET} --manifest-path ${{ matrix.manifest }}
+          cargo build --target ${RUST_TARGET} --manifest-path ${MANIFEST}
 
   wasm-test:
     name: Test stacker on WASM
