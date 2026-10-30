@@ -29,12 +29,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal
       - run: cargo test --manifest-path psm/Cargo.toml --all-targets
 
   native-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.os }} with ${{ matrix.rust_toolchain }} and ${{ matrix.mode }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -67,9 +70,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal
       - if: ${{ matrix.extra_target }}
-        run: rustup target add --toolchain ${{ env.RUSTUP_TOOLCHAIN }} ${{ matrix.extra_target }}
+        run: rustup target add --toolchain ${RUSTUP_TOOLCHAIN} ${{ matrix.extra_target }}
       - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} -- --nocapture
       - run: cargo test --manifest-path=${{ matrix.manifest }} ${{ matrix.mode }} --examples -- --nocapture
       - if: ${{ matrix.extra_target }}
@@ -94,7 +97,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo test --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }} -- --nocapture
         env:
           CC: "C:/Program Files/LLVM/bin/clang-cl.exe"
@@ -118,7 +121,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal
       - run: cargo test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
         env:
           CFLAGS: "-Werror -Wundef"
@@ -153,7 +156,7 @@ jobs:
         run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
       - name: Add llvm-mingw to PATH
         run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo check --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-linux-test:
@@ -191,7 +194,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: |
           cargo install cross --git https://github.com/cross-rs/cross
@@ -217,7 +220,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-build:
@@ -250,7 +253,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       - run: cross build --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
@@ -273,7 +276,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo build --target=${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
   cross-windows-build:
@@ -294,7 +297,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - name: Add toolchain shims
         run: |
           set -eux
@@ -339,7 +342,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target wasm32-wasip1
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target wasm32-wasip1
       - run: |
           curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
           echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
@@ -349,6 +352,9 @@ jobs:
   miri-test:
     name: Test stacker with Miri on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -360,7 +366,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --component miri
+      - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --component miri
       - name: Setup Miri
         run: cargo miri setup
       - name: Test with Miri
