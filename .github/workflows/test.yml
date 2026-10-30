@@ -68,19 +68,20 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
       MANIFEST: ${{ matrix.manifest }}
       MODE: ${{ matrix.mode }}
+      EXTRA_TARGET: ${{ matrix.extra_target }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal
       - if: ${{ matrix.extra_target }}
-        run: rustup target add --toolchain ${RUSTUP_TOOLCHAIN} ${{ matrix.extra_target }}
+        run: rustup target add --toolchain ${RUSTUP_TOOLCHAIN} ${EXTRA_TARGET}
       - run: cargo test --manifest-path=${MANIFEST} ${MODE} -- --nocapture
       - run: cargo test --manifest-path=${MANIFEST} ${MODE} --examples -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${MODE} -- --nocapture
+        run: cargo test --target=${EXTRA_TARGET} --manifest-path=${MANIFEST} ${MODE} -- --nocapture
       - if: ${{ matrix.extra_target }}
-        run: cargo test --target=${{ matrix.extra_target }} --manifest-path=${MANIFEST} ${MODE} --examples -- --nocapture
+        run: cargo test --target=${EXTRA_TARGET} --manifest-path=${MANIFEST} ${MODE} --examples -- --nocapture
 
   clang-cl-test:
     name: Test ${{ matrix.manifest }} on ${{ matrix.rust_target }} with clang-cl
