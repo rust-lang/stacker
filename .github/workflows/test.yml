@@ -355,15 +355,18 @@ jobs:
     timeout-minutes: 10
     env:
       RUSTUP_TOOLCHAIN: nightly
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target wasm32-wasip1
       - run: |
-          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
-          echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
+          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${TOOL_CACHE}
+          echo "${TOOL_CACHE}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
           echo "CARGO_TARGET_WASM32_WASIP1_RUNNER=wasmtime run --" >> $GITHUB_ENV
+        env:
+          TOOL_CACHE: ${{ runner.tool_cache }}
       - run: cargo test --target wasm32-wasip1 --all -- --nocapture
 
   miri-test:
