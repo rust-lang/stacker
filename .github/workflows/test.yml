@@ -313,6 +313,7 @@ jobs:
       RUSTUP_TOOLCHAIN: stable
       RUST_TARGET: ${{ matrix.rust_target }}
       MANIFEST: ${{ matrix.manifest }}
+      XWIN_VERSION: ${{ matrix.xwin_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -327,7 +328,7 @@ jobs:
       - name: Install Windows SDK
         run: |
           set -eux
-          xwin_version=${{ matrix.xwin_version }}
+          xwin_version=${XWIN_VERSION}
           xwin_prefix="xwin-$xwin_version-x86_64-unknown-linux-musl"
 
           # Install xwin to cargo/bin via github release. Note you could also just use `cargo install xwin`.
