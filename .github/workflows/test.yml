@@ -153,9 +153,9 @@ jobs:
           key: llvm-mingw-${{ runner.os }}-${{ env.LLVM_MINGW_VERSION }}
       - name: Install llvm-mingw
         if: steps.llvm_mingw_cache.outputs.cache-hit != 'true'
-        run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.LLVM_MINGW_VERSION }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
+        run: curl -L https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJf -
       - name: Add llvm-mingw to PATH
-        run: echo "${{ github.workspace }}/llvm-mingw-${{ env.LLVM_MINGW_VERSION }}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
+        run: echo "${{ github.workspace }}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
       - run: rustup install ${RUSTUP_TOOLCHAIN} --profile minimal --target ${{ matrix.rust_target }}
       - run: cargo check --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
 
