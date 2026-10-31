@@ -128,7 +128,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal
+      - run: rustup install ${env:RUSTUP_TOOLCHAIN} --profile minimal --force-non-host
       - run: cargo test --target ${env:RUST_TARGET} --manifest-path=${env:MANIFEST}
         env:
           CFLAGS: "-Werror -Wundef"
