@@ -26,13 +26,13 @@ unsafe extern "system" fn fiber_proc<F: FnOnce()>(data: *mut c_void) {
     // instance of `FiberInfo`. We will set-up the "runtime" for the callback and execute
     // it.
     let data = &mut *(data as *mut FiberInfo<F>);
-    let old_stack_limit = crate::get_stack_limit();
-    crate::set_stack_limit(guess_os_stack_limit());
+    let old_stack_bounds = crate::get_stack_bounds();
+    crate::set_stack_bounds(guess_os_stack_bounds());
     let callback = data.callback.as_ptr();
     data.panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(callback.read())).err();
 
     // Restore to the previous Fiber
-    crate::set_stack_limit(old_stack_limit);
+    crate::set_stack_bounds(old_stack_bounds);
     SwitchToFiber(data.parent_fiber);
 }
 
@@ -123,7 +123,7 @@ fn get_thread_stack_guarantee() -> Option<usize> {
 }
 
 #[inline(always)]
-pub unsafe fn guess_os_stack_limit() -> Option<usize> {
+pub unsafe fn guess_os_stack_bounds() -> Option<crate::StackBounds> {
     // Query the allocation which contains our stack pointer in order
     // to discover the size of the stack
     //
@@ -138,5 +138,9 @@ pub unsafe fn guess_os_stack_limit() -> Option<usize> {
     if res == 0 {
         return None;
     }
-    Some(mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee()? + 0x1000)
+    // The top of the stack isn't known here, so only the lower bound is checked.
+    Some(crate::StackBounds {
+        start: mi.assume_init().AllocationBase as usize + get_thread_stack_guarantee()? + 0x1000,
+        end: usize::MAX,
+    })
 }

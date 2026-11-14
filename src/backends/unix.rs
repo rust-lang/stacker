@@ -3,13 +3,17 @@ use libc::pthread_attr_get_np as get_attr;
 #[cfg(any(target_os = "linux", target_os = "solaris", target_os = "netbsd", target_os = "haiku"))]
 use libc::pthread_getattr_np as get_attr;
 
-pub unsafe fn guess_os_stack_limit() -> Option<usize> {
+pub unsafe fn guess_os_stack_bounds() -> Option<crate::StackBounds> {
     let mut attr = PthreadAttr::new()?;
     (get_attr(libc::pthread_self(), &mut attr.0) == 0).then_some(())?;
     let mut stackaddr = std::ptr::null_mut();
     let mut stacksize = 0;
     (libc::pthread_attr_getstack(&attr.0, &mut stackaddr, &mut stacksize) == 0).then_some(())?;
-    Some(stackaddr as usize)
+    // stackaddr is the lowest address of the stack
+    Some(crate::StackBounds {
+        start: stackaddr as usize,
+        end: stackaddr as usize + stacksize,
+    })
 }
 
 struct PthreadAttr(libc::pthread_attr_t);

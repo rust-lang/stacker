@@ -1,9 +1,9 @@
-use crate::{get_stack_limit, set_stack_limit};
+use crate::{get_stack_bounds, set_stack_bounds, StackBounds};
 
 pub struct StackRestoreGuard {
     new_stack: *mut u8,
     stack_bytes: usize,
-    old_stack_limit: Option<usize>,
+    old_stack_bounds: Option<StackBounds>,
 }
 
 const ALIGNMENT: usize = 16;
@@ -25,7 +25,7 @@ impl StackRestoreGuard {
         StackRestoreGuard {
             new_stack: ptr,
             stack_bytes,
-            old_stack_limit: get_stack_limit(),
+            old_stack_bounds: get_stack_bounds(),
         }
     }
 
@@ -42,6 +42,6 @@ impl Drop for StackRestoreGuard {
                 std::alloc::Layout::from_size_align_unchecked(self.stack_bytes, ALIGNMENT),
             );
         }
-        set_stack_limit(self.old_stack_limit);
+        set_stack_bounds(self.old_stack_bounds);
     }
 }
