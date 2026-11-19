@@ -98,7 +98,8 @@ fn main() {
         return;
     };
 
-    if !msvc {
+    // The Windows AArch64 GAS fallback needs preprocessing even with clang-cl.
+    if !msvc || (arch == "aarch64" && os == "windows" && !masm) {
         cfg.flag("-xassembler-with-cpp");
         cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
