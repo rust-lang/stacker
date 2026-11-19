@@ -98,7 +98,8 @@ fn main() {
         return;
     };
 
-    if !msvc {
+    // The shared AArch64 assembly needs preprocessing even with clang-cl.
+    if !msvc || asm == "src/arch/aarch_aapcs64.s" {
         cfg.flag("-xassembler-with-cpp");
         cfg.define(&*format!("CFG_TARGET_OS_{}", os), None);
         cfg.define(&*format!("CFG_TARGET_ARCH_{}", arch), None);
