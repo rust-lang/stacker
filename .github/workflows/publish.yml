@@ -6,6 +6,8 @@ on:
       - "psm-*"
       - "stacker-*"
 
+permissions: {}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
