@@ -310,19 +310,33 @@ jobs:
           cargo build --target ${{ matrix.rust_target }} --manifest-path ${{ matrix.manifest }}
 
   wasm-test:
-    name: Test stacker on WASM
+    name: Test stacker on ${{ matrix.rust_target }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust_target: wasm32-wasip1
+            runner_var: CARGO_TARGET_WASM32_WASIP1_RUNNER
+            wasmtime_flags: ""
+          - rust_target: wasm32-wasip2
+            runner_var: CARGO_TARGET_WASM32_WASIP2_RUNNER
+            wasmtime_flags: ""
+          - rust_target: wasm32-wasip3
+            runner_var: CARGO_TARGET_WASM32_WASIP3_RUNNER
+            wasmtime_flags: "-W component-model-async=y -S p3"
     env:
       RUSTUP_TOOLCHAIN: nightly
+      WASMTIME_VERSION: v51.0.0
     steps:
       - uses: actions/checkout@v7
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target wasm32-wasip1
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
       - run: |
-          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/v24.0.0/wasmtime-v24.0.0-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
-          echo "${{ runner.tool_cache }}/wasmtime-v24.0.0-x86_64-linux" >> $GITHUB_PATH
-          echo "CARGO_TARGET_WASM32_WASIP1_RUNNER=wasmtime run --" >> $GITHUB_ENV
-      - run: cargo test --target wasm32-wasip1 --all -- --nocapture
+          curl -Lf https://github.com/bytecodealliance/wasmtime/releases/download/${{ env.WASMTIME_VERSION }}/wasmtime-${{ env.WASMTIME_VERSION }}-x86_64-linux.tar.xz | tar xJf - -C ${{ runner.tool_cache }}
+          echo "${{ runner.tool_cache }}/wasmtime-${{ env.WASMTIME_VERSION }}-x86_64-linux" >> $GITHUB_PATH
+          echo "${{ matrix.runner_var }}=wasmtime run ${{ matrix.wasmtime_flags }} --" >> $GITHUB_ENV
+      - run: cargo test --target ${{ matrix.rust_target }} --all -- --nocapture
 
   miri-test:
     name: Test stacker with Miri on ${{ matrix.os }}
