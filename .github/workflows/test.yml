@@ -99,7 +99,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     env:
-      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}-${{ matrix.rust_target }}
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}-x86_64-pc-windows-gnu
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,19 @@ jobs:
         manifest: ["psm/Cargo.toml", "Cargo.toml"]
     steps:
       - uses: actions/checkout@v7
-      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal
+      - run: rustup install ${{ env.RUSTUP_TOOLCHAIN }} --profile minimal --target ${{ matrix.rust_target }}
+      - name: Install i686 MinGW
+        if: matrix.rust_target == 'i686-pc-windows-gnu'
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          install: mingw-w64-i686-gcc
+          update: false
+      - name: Add i686 MinGW to PATH
+        if: matrix.rust_target == 'i686-pc-windows-gnu'
+        shell: bash
+        run: echo "${{ steps.msys2.outputs.msys2-location }}/mingw32/bin" >> "$GITHUB_PATH"
       - run: cargo test --target ${{ matrix.rust_target }} --manifest-path=${{ matrix.manifest }}
         env:
           CFLAGS: "-Werror -Wundef"
